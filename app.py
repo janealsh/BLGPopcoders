@@ -9,6 +9,9 @@ def home():
 def reviews():
     return render_template("reviews.html")
 
+@app.route("/watch_history")
+def watch_history():
+    return render_template("watch_history.html")
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0" , port=8080 , debug=True)
