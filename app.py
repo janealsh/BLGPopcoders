@@ -13,5 +13,9 @@ def reviews():
 def watch_history():
     return render_template("watch_history.html")
 
+@app.route("/recommend")
+def recommend():
+    return render_template("recommend.html")
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0" , port=8080 , debug=True)
