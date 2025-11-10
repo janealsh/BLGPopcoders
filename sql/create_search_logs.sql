@@ -3,10 +3,12 @@ USE netflix2025;
 
 -- Table for user search activity
 CREATE TABLE search_logs (
-    search_id BIGINT PRIMARY KEY,
+    search_id BIGINT ,
     user_id BIGINT NOT NULL,
     search_query VARCHAR(255) NOT NULL,
     search_date DATE NOT NULL,
     clicked_result_position INT,
-    location_country VARCHAR(64)
+    location_country VARCHAR(64),
+
+    PRIMARY KEY (search_id)
 );
