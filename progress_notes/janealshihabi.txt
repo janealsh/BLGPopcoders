@@ -1,0 +1,7 @@
+Week 6:
+- added template files for watch history page
+- uploaded csv file with watch history data
+- created a simple app.py page
+
+Week 7:
+- 
