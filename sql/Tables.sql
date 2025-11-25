@@ -1,3 +1,4 @@
+-- Active: 1764077299022@@127.0.0.1@3306@netflix2025
 CREATE DATABASE IF NOT EXISTS netflix2025;
 USE netflix2025;
 
@@ -21,7 +22,9 @@ CREATE TABLE recommendation_logs (
     score DECIMAL(5,3),
     clicked BOOLEAN NOT NULL,
     position INT,
-    device VARCHAR(50)
+    device VARCHAR(50),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 
@@ -50,10 +53,10 @@ CREATE TABLE search_history (
     location_country VARCHAR(30),
     user_rating INT,
 
-    PRIMARY KEY (session_id)
+    PRIMARY KEY (session_id),
     FOREIGN KEY (user_id)
         REFERENCES users
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
     FOREIGN KEY (movie_id)
         REFERENCES movies
         ON DELETE CASCADE
