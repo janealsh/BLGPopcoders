@@ -1,4 +1,16 @@
 import mysql.connector
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="medo",
+        database="netflix2025"
+    )
+
+"""
+
+import mysql.connector
 import os
 
 from watch_history import WatchHistory
@@ -9,9 +21,8 @@ try:
     NF_DB = mysql.connector.connect(
         host="localhost",       
         user="root",            
-        password="PopC.2025",
+        password="medo",
     )
-
 
 
     cursor_NF = NF_DB.cursor()
@@ -58,3 +69,4 @@ class Database:
     def get_watch_history(self):
         watch_history = []
         return
+"""

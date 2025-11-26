@@ -42,13 +42,13 @@ CREATE TABLE recommendation_logs (
     position INT,
     device VARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE,
 );
 
 
 -- Table for user search activity
 CREATE TABLE reviews (
-    review_id BIGINT ,
+    review_id VARCHAR(50)  ,
     user_id VARCHAR(50) NOT NULL,
     movie_id VARCHAR(50) NOT NULL,
     rating INT NOT NULL,

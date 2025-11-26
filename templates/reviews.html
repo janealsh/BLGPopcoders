@@ -8,5 +8,28 @@
     <p>Here you will see all movie reviews!</p>
 
     <a href="/">Back to Home</a>
+
+     <h1>Add a New Review</h1>
+
+    <form action="/add_review" method="POST">
+        <label>Review ID:</label>
+        <input type="text" name="review_id" required>
+     
+        <label>User ID:</label>
+        <input type="text" name="user_id" required><br><br>
+
+        <label>Movie ID:</label>
+        <input type="text" name="movie_id" required><br><br>
+
+        <label>Rating (1–10):</label>
+        <input type="number" name="rating" min="1" max="10" required><br><br>
+
+        <label>Device Type:</label>
+        <input type="text" name="device_type"><br><br>
+
+
+        <button type="submit">Submit Review</button>
+    </form>
+
 </body>
 </html>
