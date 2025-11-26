@@ -2,6 +2,24 @@
 CREATE DATABASE IF NOT EXISTS netflix2025;
 USE netflix2025;
 
+-- Table for users
+CREATE TABLE users (
+    user_id VARCHAR(50) PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    gender VARCHAR(10),
+    subscription_plan VARCHAR(50),
+    is_active BOOLEAN NOT NULL
+);  
+
+-- Table for movies
+CREATE TABLE movies (
+    movie_id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content_type VARCHAR(50) NOT NULL,
+    rating VARCHAR(20)
+);
+
 -- Table for user search activity
 CREATE TABLE search_logs (
     search_id BIGINT ,
@@ -62,20 +80,5 @@ CREATE TABLE search_history (
         ON DELETE CASCADE
 );
 
--- Table for movies
-CREATE TABLE movies (
-    movie_id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    content_type VARCHAR(50) NOT NULL,
-    rating VARCHAR(20)
-);
 
--- Table for users
-CREATE TABLE users (
-    user_id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    gender VARCHAR(10),
-    subscription_plan VARCHAR(50),
-    is_active BOOLEAN NOT NULL
-);  
+
