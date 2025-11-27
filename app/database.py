@@ -1,12 +1,8 @@
 import mysql.connector
-
-DB_NAME = "netflix2025"
-
 def get_db():
-    conn = mysql.connector.connect(
+    return mysql.connector.connect(
         host="localhost",
-        user="root",          # same as in MySQL Workbench
-        password="2003",      # YOUR real MySQL password
-        database=DB_NAME,
+        user="root",
+        password="Popcoder2025",
+        database="netflix2025"
     )
-    return conn

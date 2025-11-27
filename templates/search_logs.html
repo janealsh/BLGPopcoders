@@ -62,22 +62,20 @@
     <h3>Recent Search Logs</h3>
     <table>
         <tr>
-            <th>ID</th>
+            <!--<th>ID</th>-->
             <th>User ID</th>
             <th>Query</th>
             <th>Date</th>
-            <th>Click Pos</th>
             <th>Country</th>
             <th>Actions</th>
         </tr>
 
         {% for row in logs %}
         <tr>
-            <td>{{ row.search_id }}</td>
+            <!-- <td>{{ row.search_id }}</td>-->
             <td>{{ row.user_id }}</td>
             <td>{{ row.search_query }}</td>
             <td>{{ row.search_date }}</td>
-            <td>{{ row.clicked_result_position }}</td>
             <td>{{ row.location_country }}</td>
             <td>
                 <form method="POST" action="{{ url_for('delete_search_log', search_id=row.search_id) }}">

@@ -1,7 +1,6 @@
 from flask import Flask
 from pathlib import Path
-import views  # import the whole module, we’ll use views.home, views.search_logs, etc.
-
+import views  # Import views module
 
 def create_app():
     templates_dir = Path(__file__).resolve().parents[1] / "templates"

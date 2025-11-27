@@ -24,13 +24,11 @@ def watch_history():
 def recommend():
     return render_template("recommend.html")
 
-# we will create this function
 
-# Show all logs (you should already have something like this)
 def search_logs():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM search_logs ORDER BY search_id DESC")
+    cursor.execute("SELECT * FROM search_logs ORDER BY search_id DESC LIMIT 10")
     logs = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -60,7 +58,7 @@ def add_search_log():
 
         return redirect(url_for("search_logs"))
 
-    # if someone goes to /search-logs/add with GET, just go back to main page
+    
     return redirect(url_for("search_logs"))
 
 
@@ -74,6 +72,7 @@ def delete_search_log(search_id):
     conn.close()
 
     return redirect(url_for("search_logs"))
+
 
 
 
