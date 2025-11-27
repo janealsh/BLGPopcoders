@@ -5,8 +5,25 @@
 </head>
 <body>
     <h1>Your Watch History</h1>
-    <p>Below is your watch history. You can click on a movie title to view more details.</p>
-
+    <p>Below is the last 100 entries of your watch history. You can click on a movie title to view more details.</p>
+    {% if watch_history %}
+        <table border="1">
+            <tr>
+                {% for column in columns %}
+                    <th>{{ column }}</th>
+                {% endfor %}
+            </tr>
+            {% for row in watch_history %}
+            <tr>
+                {% for value in row %}
+                    <td>{{ value }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No watch history found.</p>
+    {% endif %}
     <a href="/">Back to Home</a>
 </body>
 </html>
