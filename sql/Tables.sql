@@ -31,6 +31,11 @@ CREATE TABLE search_logs (
 
     PRIMARY KEY (search_id)
 );
+ALTER TABLE search_log
+ADD COLUMN results_count INT NOT NULL DEFAULT 0,
+ADD COLUMN search_time_ms INT NOT NULL DEFAULT 0;
+
+
 
 -- Table for recommendation logs
 CREATE TABLE recommendation_logs (
