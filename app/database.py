@@ -4,7 +4,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="medo",
+        password="PopC.2025",
         database="netflix2025"
     )
 
@@ -34,7 +34,7 @@ try:
     cursor_NF.execute(f"USE {db_name}")
     print(f"Database {db_name}  selected.")
 
-    sql_path = '../sql/Tables.sql'
+    sql_path = f'../sql/Tables.sql'
 
     try:
         with open(sql_path, 'r', encoding='utf-8') as dosya:

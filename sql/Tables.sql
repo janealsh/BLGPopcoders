@@ -44,7 +44,12 @@ CREATE TABLE recommendation_logs (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE,
 );
-
+LOAD DATA LOCAL INFILE '{'../Tables/recommendation_logs.csv'}'
+    INTO TABLE recommendation_logs
+    FIELDS TERMINATED BY ',' 
+    LINES TERMINATED BY '\\n'
+    IGNORE 1 ROWS
+    (recommendation_id, user_id, ...);
 
 -- Table for user search activity
 CREATE TABLE reviews (

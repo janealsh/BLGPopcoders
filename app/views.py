@@ -1,6 +1,7 @@
 from flask import render_template, request , render_template_string
 import mysql.connector
 from datetime import date
+from recommend import RecommendationLogs
 
 db = mysql.connector.connect(
     host="localhost",
@@ -13,8 +14,6 @@ cursor = db.cursor()
 
 def home():
     return render_template("home.html")
-
-
 
 def movies():
     return render_template("movies.html")
@@ -58,4 +57,17 @@ def watch_history():
     return render_template("watch_history.html")
 
 def recommend():
-    return render_template("recommend.html")
+    rec_logs = RecommendationLogs(db)
+
+    try:
+        recommendations = rec_logs.get_random_logs(count=4)
+        
+        if recommendations:
+            column_names = list(recommendations[0].keys())
+        else:
+            column_names = []
+        
+        return render_template("recommend.html", recommendations=recommendations, column_names=column_names)
+    except Exception as e:
+        print(f"Error fetching recommendation logs: {e}")
+        return render_template("recommend.html", recommendations=[], column_names=[], error=str(e))

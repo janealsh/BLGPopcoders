@@ -1,12 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8"/>
     <title>Recommend Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
 </head>
 <body>
+<div class="container">
     <h1>Welcome to the Recommend Page 🎬</h1>
-    <p>Do you need recommendations? You've come to the right place!</p>
+    <p>Here you can see all recommendation logs!</p>
 
     <a href="/">Back to Home</a>
+
+    {% if recommendations %}
+    <h2>Recommendation Logs (First 100 Records)</h2>
+    <table>
+        <thead>
+            <tr>
+                {% for column in column_names %}
+                <th>{{ column }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for rec in recommendations %}
+            <tr>
+                {% for column in column_names %}
+                <td>{{ rec[column] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No recommendation logs found.</p>
+    {% endif %}
+</div>
 </body>
 </html>

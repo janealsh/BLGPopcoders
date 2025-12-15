@@ -1,7 +1,35 @@
+import os
+
 class RecommendationLogs:
     def __init__(self, connection):
         self.columns = ['recommendation_id', 'user_id', 'movie_id', 'score', 'is_clicked', 'rank', 'device']
         self.connection = connection
+
+    def load_logs_from_csv(self):
+
+        try:
+            cursor = self.connection.cursor()
+            
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            csv_path = os.path.join(base_dir, 'Tables', 'recommendation_logs.csv')
+            
+            query = f"""
+                LOAD DATA LOCAL INFILE '../Tables/recommendation_logs.csv'
+                INTO TABLE recommendation_logs
+                FIELDS TERMINATED BY ',' 
+                LINES TERMINATED BY '\\n'
+                IGNORE 1 ROWS
+                (recommendation_id, user_id, ...);
+            """
+            
+            cursor.execute(query)
+            self.connection.commit()
+            cursor.close()
+            
+            print(f"Success: Data loaded from {csv_path}")
+
+        except Exception as e:
+            print(f"Error loading CSV: {e}")
 
     def generate_primary_key(self):
         try:
@@ -121,3 +149,27 @@ class RecommendationLogs:
         except Exception as e:
             print("Could not find any corresponding value", e)
             return False
+
+    def get_all_logs(self, limit=1):
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            query = f"SELECT * FROM recommendation_logs LIMIT {limit}"
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            print(f"Error fetching all logs: {e}")
+            return []
+    
+    def get_random_logs(self, count=4):
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            query = f"SELECT * FROM recommendation_logs ORDER BY RAND() LIMIT {count}"
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            print(f"Error fetching random logs: {e}")
+            return []
