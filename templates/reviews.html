@@ -8,28 +8,123 @@
     <p>Here you will see all movie reviews!</p>
 
     <a href="/">Back to Home</a>
+    <link rel="stylesheet" href="/static/styles.css">
 
-     <h1>Add a New Review</h1>
+    <section class="reviews-panel">
+        <div class="controls">
+            <form id="select-movie-form" method="GET" action="/reviews">
+                <label for="movie_id">Select Movie:</label>
+                <select id="movie_id" name="movie_id" onchange="document.getElementById('select-movie-form').submit()">
+                    <option value="">-- Choose a movie --</option>
+                    {% for m in movies %}
+                        <option value="{{ m[0] }}" {% if selected_movie_id and (selected_movie_id|int) == (m[0]|int) %}selected{% endif %}>{{ m[1] }}</option>
+                    {% endfor %}
+                </select>
+            </form>
 
-    <form action="/add_review" method="POST">
-        <label>Review ID:</label>
-        <input type="text" name="review_id" required>
-     
-        <label>User ID:</label>
-        <input type="text" name="user_id" required><br><br>
+            <div class="add-form">
+                <h2>Add a New Review</h2>
+                <form action="/add_review" method="POST">
+                    <input type="hidden" name="movie_id" id="add-movie-id" value="{{ selected_movie_id or '' }}">
+                    <label>Review ID</label>
+                    <input type="text" name="review_id" required>
 
-        <label>Movie ID:</label>
-        <input type="text" name="movie_id" required><br><br>
+                    <label>User ID</label>
+                    <input type="text" name="user_id" required>
 
-        <label>Rating (1–10):</label>
-        <input type="number" name="rating" min="1" max="10" required><br><br>
+                    <label>Rating (1-10)</label>
+                    <input type="number" name="rating" min="1" max="10" required>
 
-        <label>Device Type:</label>
-        <input type="text" name="device_type"><br><br>
+                    <label>Device Type</label>
+                    <input type="text" name="device_type">
 
+                    <label>Verified</label>
+                    <select name="is_verified">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
 
-        <button type="submit">Submit Review</button>
-    </form>
+                    <button type="submit" class="btn-primary">Add Review</button>
+                </form>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="reviews-list">
+            <h2>Reviews</h2>
+            {% if reviews is none or reviews|length == 0 %}
+                <p class="muted">No reviews for this movie yet.</p>
+            {% else %}
+                <table class="reviews-table">
+                    <thead>
+                        <tr>
+                            <th>Review ID</th>
+                            <th>User ID</th>
+                            <th>Rating</th>
+                            <th>Date</th>
+                            <th>Device</th>
+                            <th>Verified</th>
+                            <th>Votes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reviews %}
+                        <tr>
+                            <td>{{ r[0] }}</td>
+                            <td>{{ r[1] }}</td>
+                            <td>{{ r[3] }}</td>
+                            <td>{{ r[4] }}</td>
+                            <td>{{ r[5] }}</td>
+                            <td>{{ r[6] }}</td>
+                            <td>{{ r[7] }}</td>
+                            <td class="actions">
+                                <details class="edit-details">
+                                    <summary>Edit</summary>
+                                    <form method="POST" action="/update_review" class="edit-form">
+                                        <input type="hidden" name="review_id" value="{{ r[0] }}">
+                                        <input type="hidden" name="movie_id" value="{{ r[2] }}">
+                                        <label>Rating</label>
+                                        <input type="number" name="rating" value="{{ r[3] }}" min="1" max="10" required>
+                                        <label>Device Type</label>
+                                        <input type="text" name="device_type" value="{{ r[5] }}">
+                                        <label>Verified</label>
+                                        <select name="is_verified">
+                                            <option value="0" {% if r[6] == 0 or r[6] == '0' %}selected{% endif %}>No</option>
+                                            <option value="1" {% if r[6] == 1 or r[6] == '1' %}selected{% endif %}>Yes</option>
+                                        </select>
+                                        <label>Total Votes</label>
+                                        <input type="number" name="total_votes" value="{{ r[7] or 0 }}">
+                                        <div class="row-actions">
+                                            <button type="submit" class="btn-secondary">Save</button>
+                                        </div>
+                                    </form>
+                                </details>
+
+                                <form method="POST" action="/delete_review" class="inline-delete">
+                                    <input type="hidden" name="review_id" value="{{ r[0] }}">
+                                    <button type="submit" class="btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </section>
+
+    <script>
+        // Keep add form movie_id in sync with selector
+        const movieSelect = document.getElementById('movie_id');
+        const addMovieId = document.getElementById('add-movie-id');
+        if (movieSelect && addMovieId) {
+            movieSelect.addEventListener('change', () => {
+                addMovieId.value = movieSelect.value;
+            });
+        }
+    </script>
 
 </body>
 </html>

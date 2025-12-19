@@ -14772,13 +14772,13 @@ review_014770,user_04513,movie_0809,4,2025-06-28,Tablet,False,9.0
 review_014771,user_06860,movie_0564,3,2024-03-24,Smart TV,True,7.0
 review_014772,user_07458,movie_0398,3,2025-06-11,Mobile,False,5.0
 review_014773,user_09219,movie_0623,5,2024-09-10,Smart TV,True,5.0
+review_014780,user_06782,movie_0875,1,2024-05-08,Laptop,True,5.0
 review_014774,user_05243,movie_0360,4,2024-09-01,Mobile,False,7.0
 review_014775,user_01688,movie_0428,3,2025-01-05,Mobile,True,8.0
 review_014776,user_07282,movie_0565,3,2025-09-09,Tablet,False,5.0
 review_014777,user_02089,movie_0282,2,2024-10-22,Mobile,True,6.0
 review_014778,user_08312,movie_0954,4,2025-10-24,Tablet,True,6.0
 review_014779,user_05448,movie_0220,3,2025-08-10,Tablet,True,4.0
-review_014780,user_06782,movie_0875,1,2024-05-08,Laptop,True,5.0
 review_014781,user_01305,movie_0507,5,2024-10-03,Tablet,True,3.0
 review_014782,user_08967,movie_0570,4,2024-02-28,Mobile,True,3.0
 review_014783,user_08714,movie_0348,4,2025-04-01,Mobile,True,5.0
@@ -14788,7 +14788,7 @@ review_014786,user_03499,movie_0967,3,2024-05-14,Mobile,True,2.0
 review_014787,user_05000,movie_0604,4,2025-01-06,Mobile,False,
 review_014788,user_00473,movie_0429,3,2025-09-03,Laptop,True,3.0
 review_014789,user_06546,movie_0319,5,2024-09-02,Tablet,True,6.0
-review_014790,user_07033,movie_0105,5,2024-04-27,Laptop,True,6.0
+review_014790,user_07033,movie_0105,5,2024-04-27,Laptop,True,6.097
 review_014791,user_03533,movie_0843,4,2025-12-31,Tablet,True,7.0
 review_014792,user_02377,movie_0775,4,2025-07-27,Mobile,True,
 review_014793,user_05301,movie_0211,3,2024-01-12,Mobile,True,5.0
