@@ -1,28 +1,27 @@
--- Active: 1764077299022@@127.0.0.1@3306@netflix2025
 CREATE DATABASE IF NOT EXISTS netflix2025;
 USE netflix2025;
 
 -- Table for users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id VARCHAR(50) PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL,
-    gender VARCHAR(10),
+    gender VARCHAR(20),
     subscription_plan VARCHAR(50),
     is_active BOOLEAN NOT NULL
 );  
 
 -- Table for movies
-CREATE TABLE movies (
+CREATE TABLE IF NOT EXISTS movies (
     movie_id VARCHAR(50) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content_type VARCHAR(50) NOT NULL,
     rating VARCHAR(20)
 );
 
--- Table for user search activity
-CREATE TABLE search_logs (
-    search_id BIGINT ,
+-- Table for user search logs
+CREATE TABLE IF NOT EXISTS search_logs (
+    search_id BIGINT,
     user_id VARCHAR(50) NOT NULL,
     search_query VARCHAR(255) NOT NULL,
     search_date DATE NOT NULL,
@@ -31,14 +30,9 @@ CREATE TABLE search_logs (
 
     PRIMARY KEY (search_id)
 );
-ALTER TABLE search_log
-ADD COLUMN results_count INT NOT NULL DEFAULT 0,
-ADD COLUMN search_time_ms INT NOT NULL DEFAULT 0;
-
-
 
 -- Table for recommendation logs
-CREATE TABLE recommendation_logs (
+CREATE TABLE IF NOT EXISTS recommendation_logs (
     recommendation_id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
     movie_id VARCHAR(50) NOT NULL,
@@ -47,13 +41,13 @@ CREATE TABLE recommendation_logs (
     position INT,
     device VARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 
--- Table for user search activity
-CREATE TABLE reviews (
-    review_id VARCHAR(50)  ,
+-- Table for user reviews
+CREATE TABLE IF NOT EXISTS reviews (
+    review_id VARCHAR(50),
     user_id VARCHAR(50) NOT NULL,
     movie_id VARCHAR(50) NOT NULL,
     rating INT NOT NULL,
@@ -65,18 +59,17 @@ CREATE TABLE reviews (
     PRIMARY KEY (review_id)
 );
 
--- Table for user search activity
-CREATE TABLE search_history (
-    session_id BIGINT ,
+-- Table for user watch history
+CREATE TABLE IF NOT EXISTS watch_history (
+    session_id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
     movie_id VARCHAR(50) NOT NULL,
-    watch_date INT NOT NULL,
-    watch_duration_minutes INT NOT NULL,
-    progress_percentage INT NOT NULL,
+    watch_date DATE NOT NULL,
+    watch_duration_minutes BIGINT,
+    progress_percentage INT,
     location_country VARCHAR(30),
     user_rating INT,
 
-    PRIMARY KEY (session_id),
     FOREIGN KEY (user_id)
         REFERENCES users
         ON DELETE CASCADE,
@@ -84,6 +77,3 @@ CREATE TABLE search_history (
         REFERENCES movies
         ON DELETE CASCADE
 );
-
-
-

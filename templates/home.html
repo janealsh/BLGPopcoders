@@ -8,12 +8,16 @@
     <body>
     
         <h1>Movie Tracker: Poptracker!</h1>
-        <ul>
-            <li><a href="{{ url_for('watch_history')}}">View watch history</a></li>
-            
-            <li><a href="{{ url_for('search_logs')}}">search logs</a></li>
-            
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('watch_history') }}">View watch history</a></li>
+                <li><a href="{{ url_for('search_logs') }}">Search logs</a></li>
+                <li><a href="{{ url_for('add_review_form') }}">Add a new review</a></li>
+                <li><a href="{{ url_for('movies') }}">Browse movies</a></li>
+                <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
+                <li><a href="{{ url_for('recommend') }}">Recommendations</a></li>
+            </ul>
+        </nav>
 
-        </ul>
     </body>
 </html>
