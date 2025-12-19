@@ -68,5 +68,19 @@ def watch_history():
     return render_template("watch_history.html", watch_history=watch_history_data, columns=watch_history_columns)
 
 
+def delete_watch_history():
+
+    try: 
+        wh_id = request.form.get("primary_key")
+
+        query = """DELETE FROM watch_history WHERE session_id = %s"""
+        cursor.execute(query, (wh_id,))
+        db.commit()
+
+        return "Watch history entry deleted successfully. <a href='/watch_history'>Back to Watch History</a>"
+
+    except Exception as e:
+        return f"Error deleting entry: {e}"
+
 def recommend():
     return render_template("recommend.html")

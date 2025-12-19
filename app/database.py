@@ -66,7 +66,7 @@ except mysql.connector.Error as err:
 class Database:
     # def __init__(self, title, date_time, user):
 
-    def get_watch_history(self):
+    def watch_history(self):
         watch_history = []
         return
 """
