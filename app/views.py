@@ -4,10 +4,10 @@ from datetime import date
 
 # Database connection
 db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="jane2004",
-    database="netflix2025"
+    host= 'localhost',
+    user='root',
+    password='medo',
+    database='netflix2025'
 )
 
 cursor = db.cursor()
@@ -21,51 +21,81 @@ def movies():
 
 
 def reviews():
-    # Load movies for selector
+    # Pagination and optional filtering by movie_id and/or user_id
+    page_arg = request.args.get('page', '1')
     try:
-        cursor.execute("SELECT movie_id, title FROM movies ORDER BY title")
-        movies = cursor.fetchall()
+        page = int(page_arg)
+        if page < 1:
+            page = 1
     except Exception:
-        movies = []
+        page = 1
 
-    selected_movie_id = request.args.get('movie_id')
-    reviews = []
-    if selected_movie_id:
-        try:
-            cursor.execute(
-                """
-                SELECT review_id, user_id, movie_id, rating, review_date, device_type, is_verified, total_votes
-                FROM reviews
-                WHERE movie_id = %s
-                ORDER BY review_date DESC
-                """,
-                (selected_movie_id,)
-            )
-            reviews = cursor.fetchall()
-        except Exception:
-            reviews = []
+    print("We're here!!")
 
-    return render_template("reviews.html", movies=movies, reviews=reviews, selected_movie_id=selected_movie_id)
+    per_page = 20
+    movie_id = request.args.get('movie_id') or None
+    user_id = request.args.get('user_id') or None
+
+    print(f"movie_id: {movie_id}, user_id: {user_id}")
+
+    where_clauses = []
+    params = []
+    if movie_id:
+        where_clauses.append("reviews.movie_id = %s")
+        params.append(movie_id)
+    if user_id:
+        where_clauses.append("user_id = %s")
+        params.append(user_id)
+
+    where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    try:
+        # total count for pagination
+        count_sql = f"SELECT COUNT(*) FROM reviews{where_sql}"
+        cursor.execute(count_sql, tuple(params))
+        total = cursor.fetchone()[0] or 0
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+
+        offset = (page - 1) * per_page
+        sql = f"""
+            SELECT reviews.review_id, reviews.user_id, reviews.movie_id, movies.title AS movie_title,
+                   reviews.rating, reviews.review_date, reviews.device_type, reviews.is_verified_watch, reviews.total_votes
+            FROM reviews
+            LEFT JOIN movies ON reviews.movie_id = movies.movie_id
+            {where_sql}
+            ORDER BY review_date DESC
+            LIMIT %s OFFSET %s
+        """
+        exec_params = params + [per_page, offset]
+        cursor.execute(sql, tuple(exec_params))
+        reviews = cursor.fetchall()
+        print(f"Fetched {len(reviews)} reviews for page {page}")
+    except Exception as e:
+        print(f"Error fetching reviews: {e}")
+        reviews = []
+        total_pages = 1
+
+    return render_template("reviews.html", reviews=reviews, page=page, total_pages=total_pages, movie_id=movie_id, user_id=user_id)
 
 
 def add_review():
-    # required fields
-    review_id = request.form.get('review_id')
+    # required fields (review_id is AUTO_INCREMENT in DB)
     user_id = request.form.get('user_id')
     movie_id = request.form.get('movie_id')
     rating = request.form.get('rating')
     device_type = request.form.get('device_type') or None
-    is_verified = request.form.get('is_verified') or 0
+    # accept either form field name used in templates
+    is_verified_watch = request.form.get('is_verified_watch') if request.form.get('is_verified_watch') is not None else request.form.get('is_verified_watch') or 0
     total_votes = request.form.get('total_votes') or 0
 
-    if not (review_id and user_id and movie_id and rating):
+    if not (user_id and movie_id and rating):
         return "Missing required fields", 400
 
     sql = """
-    INSERT INTO reviews (review_id, user_id, movie_id, rating, review_date, device_type, is_verified, total_votes)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    INSERT INTO reviews (user_id, movie_id, rating, review_date, device_type, is_verified_watch, total_votes)
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    values = (review_id, user_id, movie_id, rating, date.today(), device_type, is_verified, total_votes)
+    values = (user_id, movie_id, rating, date.today(), device_type, is_verified_watch, total_votes)
     try:
         cursor.execute(sql, values)
         db.commit()
@@ -79,7 +109,7 @@ def update_review():
     review_id = request.form.get('review_id')
     rating = request.form.get('rating')
     device_type = request.form.get('device_type')
-    is_verified = request.form.get('is_verified') or 0
+    is_verified_watch = request.form.get('is_verified_watch') if request.form.get('is_verified_watch') is not None else request.form.get('is_verified_watch') or 0
     total_votes = request.form.get('total_votes') or 0
     movie_id = request.form.get('movie_id')
 
@@ -88,10 +118,10 @@ def update_review():
 
     sql = """
     UPDATE reviews
-    SET rating=%s, device_type=%s, is_verified=%s, total_votes=%s
+    SET rating=%s, device_type=%s, is_verified_watch=%s, total_votes=%s
     WHERE review_id=%s
     """
-    values = (rating, device_type, is_verified, total_votes, review_id)
+    values = (rating, device_type, is_verified_watch, total_votes, review_id)
     try:
         cursor.execute(sql, values)
         db.commit()
