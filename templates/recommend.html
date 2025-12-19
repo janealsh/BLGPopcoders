@@ -8,32 +8,50 @@
 <body>
 <div class="container">
     <h1>Welcome to the Recommend Page 🎬</h1>
-    <p>Here you can see all recommendation logs!</p>
+    <p>Here you can see 4 random recommendation logs and their movie titles!</p>
 
     <a href="/">Back to Home</a>
 
     {% if recommendations %}
-    <h2>Recommendation Logs (First 100 Records)</h2>
+    <h2>Random Recommendation Logs</h2>
     <table>
         <thead>
             <tr>
-                {% for column in column_names %}
-                <th>{{ column }}</th>
-                {% endfor %}
+                <th>Recommendation ID</th>
+                <th>User ID</th>
+                <th>Movie ID</th>
+                <th>Score</th>
+                <th>Clicked</th>
+                <th>Position</th>
+                <th>Device</th>
             </tr>
         </thead>
         <tbody>
             {% for rec in recommendations %}
             <tr>
-                {% for column in column_names %}
-                <td>{{ rec[column] }}</td>
-                {% endfor %}
+                <td>{{ rec.recommendation_id }}</td>
+                <td>{{ rec.user_id }}</td>
+                <td>{{ rec.movie_id }}</td>
+                <td>{{ rec.score }}</td>
+                <td>{{ rec.clicked }}</td>
+                <td>{{ rec.position }}</td>
+                <td>{{ rec.device }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <h2>Corresponding Movie Titles</h2>
+    <ul>
+        {% for title in movie_titles %}
+        <li>{{ title }} 
+            <button>👍 Like</button>
+            <button>👎 Dislike</button>
+        </li>
+        {% endfor %}
+    </ul>
     {% else %}
-    <p>No recommendation logs found.</p>
+    <p>No recommendations found.</p>
     {% endif %}
 </div>
 </body>
