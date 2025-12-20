@@ -4,7 +4,28 @@
   <head>
     <title>Watch History</title>
     <style>
-      /*temporary styling since our css file currently doesn't work*/
+    :root{
+            --bg:#f6f8fb;
+            --card:#ffffff;
+            --muted:#666b75;
+            --accent:#2563eb;
+            --danger:#dc2626;
+            --radius:10px;
+            --max-width:1100px;
+        }
+    html,body{height:100%;}
+    body{
+            margin:0;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background:var(--bg);
+            color:#17202a;
+            -webkit-font-smoothing:antialiased;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content: flex-start;
+            padding:32px 20px;
+      }
       table {
         /* border-collapse: collapse; */
         margin: 0;
@@ -43,51 +64,8 @@
   </head>
   <body>
     <h1>Your Watch History</h1>
-    <!-- <div class="header-container"></div> -->
-    <p>
-      Below is the last 100 entries of your watch history. You can click on a
-      movie title to view more details, and select the "delete" button to delete an entry.
-    </p>
-    <a href="/">Back to Home</a>
-    <div>
-      {% if watch_history %}
-      <table>
-        <tr>
-          <!-- Always show these basic columns + Action -->
-          <th>ID</th>
-          <th>User ID</th>
-          <th>Movie ID</th>
-          <th>Watch date</th>
-          <th>Minutes watched</th>
-          <th>Progress percentage</th>
-          <th>Country</th>
-          <th>Rating</th>
-          <th>Action</th>
-        </tr>
-        <tr>
-          {% for row in watch_history %}
-        </tr>
+    <p>Below is your watch history. You can click on a movie title to view more details.</p>
 
-        <tr>
-          {% for value in row %}
-          <td>{{ value }}</td>
-          {% endfor %}
-          <td>
-            <form
-              action="/delete_watch_history"
-              method="post"
-              style="display: inline"
-            >
-              <input type="hidden" name="primary_key" value="{{ row[0] }}" />
-              <button class="delete-button" type="submit">Delete</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-      {% else %}
-      <p>No watch history found.</p>
-      {% endif %}
-    </div>
-  </body>
+    <a href="/">Back to Home</a>
+</body>
 </html>
