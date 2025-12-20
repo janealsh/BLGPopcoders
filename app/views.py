@@ -50,23 +50,42 @@ def add_review():
 
 
 def watch_history():
-    # db = current_app.config["db"]
-    # watch_history = db.watch_history()
-    # return render_template("watch_history.html", watch_history = watch_history)
-
-    try: 
-        query = """SELECT * FROM watch_history
-            ORDER BY watch_date DESC
-            LIMIT 100"""
+    try:
+        query = """
+        SELECT 
+            wh.session_id AS ID,
+            wh.user_id AS UserID,
+            wh.movie_id AS MovieID,
+            wh.watch_date AS WatchDate,
+            wh.watch_duration_minutes AS MinutesWatched,
+            wh.progress_percentage AS ProgressPercentage,
+            wh.location_country AS Country,
+            wh.user_rating AS Rating
+        FROM watch_history wh
+        ORDER BY wh.watch_date DESC
+        LIMIT 100
+        """
+    
         cursor.execute(query)
         watch_history_data = cursor.fetchall()
-        watch_history_columns = [column[0] for column in cursor.fetchall()]
+        
+        return render_template(
+            "watch_history.html", 
+            watch_history=watch_history_data
+        )
+        
+    except Exception as e:
+        print(f"Error fetching watch history: {e}")
+        return render_template_string(f"""
+        <h2>Error loading watch history</h2>
+        <p>Error: {e}</p>
+        <a href="{{{{ url_for('home') }}}}">Back to Home</a>
+        """)
 
-    except mysql.connector.Error as e:
-        return f"Database error: {e}. Please check your database and connection, then try again."
-
-    return render_template("watch_history.html", watch_history=watch_history_data, columns=watch_history_columns)
-
+    # # db = current_app.config["db"]
+    # # watch_history = db.get_watch_history()
+    # # return render_template("watch_history.html", watch_history = watch_history)
+    # return render_template("watch_history.html")
 
 def delete_watch_history():
 
