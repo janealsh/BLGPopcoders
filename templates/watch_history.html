@@ -3,93 +3,149 @@
   <head>
     <title>Watch History</title>
     <style>
-      :root{
-          --bg:#f6f8fb;
-          --card:#ffffff;
-          --muted:#666b75;
-          --accent:#2563eb;
-          --danger:#dc2626;
-          --radius:10px;
-          --max-width:1100px;
+      :root {
+        --bg: #f6f8fb;
+        --card: #ffffff;
+        --muted: #666b75;
+        --accent: #2563eb;
+        --danger: #dc2626;
+        --radius: 10px;
+        --max-width: 1100px;
       }
-      html,body{height:100%;}
-      body{
-          margin:0;
-          font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          background:var(--bg);
-          color:#17202a;
-          -webkit-font-smoothing:antialiased;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content: flex-start;
-          padding:32px 20px;
+
+      html,
+      body {
+        height: 100%;
       }
-      table {
-        /* border-collapse: collapse; */
+
+      body {
         margin: 0;
+        padding: 24px 16px;
+        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg);
+        color: #17202a;
+        -webkit-font-smoothing: antialiased;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-        table-layout: auto;
       }
-      th,td {
-        padding: 8px;
+      table {
+        width: 100%; /* fill parent (the page-width wrapper) */
+        border-collapse: collapse;
+        table-layout: fixed;
+        background: var(--card);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
         text-align: left;
+        vertical-align: middle;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
+
+      /* Align action buttons in the last column to the center */
+      table td,th:last-child {
+        text-align: center;
+      }
+
       th {
         background-color: #e4ebfc;
         position: sticky;
         top: 0;
+        z-index: 1;
       }
+
       tr:nth-child(even) {
         background-color: #f9f9f9;
       }
       tr:hover {
         background-color: #f5f5f5;
       }
+
+      /* Buttons */
       .delete-button {
-        background-color: #dc2626;
-        color: white;
+        background-color: var(--danger);
+        color: #fff;
         border: none;
-        padding: 5px 10px;
+        padding: 6px 10px;
         border-radius: 4px;
+        cursor: pointer;
       }
       .delete-button:hover {
-        background-color: #a02515;
+        filter: brightness(0.9);
       }
+
       .home-button {
-        background-color: #1976d2;
-        color: white;
+        display: inline-block;
+        background-color: var(--accent);
+        color: #fff;
         border: none;
         padding: 8px 12px;
         border-radius: 4px;
-        margin-bottom: 20px;
-        margin-top: 8px;
-        text-decoration:none
+        margin: 8px 0 20px 0;
+        text-decoration: none;
       }
       .home-button:hover {
-        background-color: #104d8a;
+        filter: brightness(0.9);
       }
 
+      th:last-child,
+      td:last-child {
+        width: 1%;
+        white-space: nowrap;
+      }
+
+      @media (min-width: 1100px) {
+        .content-wrapper {
+          max-width: var(--max-width);
+        }
+      }
+      @media (max-width: 900px) {
+        table {
+          width: 100%;
+        }
+      }
+      @media (max-width: 600px) {
+        table {
+          min-width: 900px;
+        } 
+      }
     </style>
   </head>
   <body>
     <h1>Your Watch History</h1>
-    <p>Below is the last 100 entries of your watch history. You can click on a movie title to view more details.</p>
+    <p>
+      Below is the last 100 entries of your watch history. You can click on a
+      movie title to view more details.
+    </p>
     <a class="home-button" href="/">Back to Home</a>
-    <div style="width: 90%;">
+    <div style="width: 90%">
       {% if watch_history %}
       <table>
+        <colgroup>
+          <col style="width: 10%" />
+          <col style="width: 10%" />
+          <col style="width: 10%" />
+          <col style="width: 12%" />
+          <col style="width: 12%" />
+          <col style="width: 10%" />          
+          <col style="width: 10%" />
+          <col style="width: 6%" />          
+          <col style="width: 20%" />
+        </colgroup>
         <tr>
-          <!-- Always show these basic columns + Action -->
           <th>ID</th>
           <th>User ID</th>
           <th>Movie ID</th>
           <th>Watch date</th>
-          <th>Minutes watched</th>
-          <th>Progress percentage</th>
+          <th>Mins watched</th>
+          <th>Progress %</th>
           <th>Country</th>
           <th>Rating</th>
           <th>Action</th>
