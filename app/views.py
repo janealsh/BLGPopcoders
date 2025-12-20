@@ -211,6 +211,20 @@ def delete_watch_history():
         return f"Error deleting entry: {e}"
 
 
+def delete_watch_history():
+
+    try: 
+        wh_id = request.form.get("primary_key")
+
+        query = """DELETE FROM watch_history WHERE session_id = %s"""
+        cursor.execute(query, (wh_id,))
+        db.commit()
+
+        return "Watch history entry deleted successfully. <a href='/watch_history'>Back to Watch History</a>"
+
+    except Exception as e:
+        return f"Error deleting entry: {e}"
+
 def recommend():
     rec_logs = RecommendationLogs(db)
     movies = Movies(db)

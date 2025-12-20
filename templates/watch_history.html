@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+  <head>
     <title>Watch History</title>
     <style>
       /*temporary styling since our css file currently doesn't work*/
@@ -42,7 +43,11 @@
   </head>
   <body>
     <h1>Your Watch History</h1>
-    <p>Below is the last 100 entries of your watch history. You can click on a movie title to view more details.</p>
+    <!-- <div class="header-container"></div> -->
+    <p>
+      Below is the last 100 entries of your watch history. You can click on a
+      movie title to view more details, and select the "delete" button to delete an entry.
+    </p>
     <a href="/">Back to Home</a>
     <div>
       {% if watch_history %}
