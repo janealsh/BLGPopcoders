@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Analytics</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background:#efefef; }
+    </style>
+</head>
+<body>
+    <h1>Analytics — User Summary</h1>
+    <p>Demonstrates nested subqueries, GROUP BY, and joins across multiple tables.</p>
+
+    <table>
+        <tr>
+            <th>User ID</th>
+            <th>User</th>
+            <th>Total Searches</th>
+            <th>Total Watches</th>
+            <th>Avg Rating</th>
+            <th>Top Movie</th>
+        </tr>
+        {% for r in rows %}
+        <tr>
+            <td>{{ r.user_id }}</td>
+            <td>{{ r.user_name }}</td>
+            <td>{{ r.total_searches }}</td>
+            <td>{{ r.total_watches }}</td>
+            <td>{{ "{:.2f}".format(r.avg_rating) if r.avg_rating is not none else '' }}</td>
+            <td>{{ r.top_movie }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2 style="margin-top:24px">Country Summary (GROUP BY location)</h2>
+    <p>Shows aggregated metrics per country using outer joins and a nested subquery to find top search query per country.</p>
+    <table>
+        <tr>
+            <th>Country</th>
+            <th>Total Searches</th>
+            <th>Total Watch Events</th>
+            <th>Avg Rating</th>
+            <th>Top Search Query</th>
+        </tr>
+        {% for c in country_rows %}
+        <tr>
+            <td>{{ c.country }}</td>
+            <td>{{ c.total_searches }}</td>
+            <td>{{ c.total_watch_events }}</td>
+            <td>{{ "{:.2f}".format(c.avg_rating) if c.avg_rating is not none else '' }}</td>
+            <td>{{ c.top_search_query or '' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <p><a href="{{ url_for('search_logs') }}">Back to Search Logs</a></p>
+</body>
+</html>

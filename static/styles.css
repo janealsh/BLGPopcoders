@@ -1,3 +1,44 @@
 h1 {
     color: darkgreen;
 }
+
+/* Reviews page styles */
+.reviews-panel {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 18px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    font-family: Arial, Helvetica, sans-serif;
+}
+.controls {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.controls label { display:block; font-weight:600; margin-bottom:6px; }
+select[name="movie_id"] { padding:8px 10px; border-radius:6px; border:1px solid #ccc; }
+.add-form { min-width:280px; }
+.add-form input, .add-form select { width:100%; padding:8px 10px; margin-bottom:10px; border-radius:6px; border:1px solid #ddd; }
+.btn-primary, .btn-secondary, .btn-danger { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
+.btn-primary { background:#1976d2; color:#fff; }
+.btn-secondary { background:#2e7d32; color:#fff; }
+.btn-danger { background:#c62828; color:#fff; }
+.reviews-list { margin-top:18px; }
+.reviews-table { width:100%; border-collapse:collapse; }
+.reviews-table th, .reviews-table td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+.reviews-table thead { background:#fafafa; }
+.edit-details summary { cursor:pointer; color:#1976d2; font-weight:600; }
+.edit-form { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.edit-form input, .edit-form select { padding:6px 8px; border-radius:4px; border:1px solid #ddd; }
+.inline-delete { display:inline-block; margin-left:8px; }
+.muted { color:#666; }
+.actions { white-space:nowrap; }
+.row-actions { margin-top:6px; }
+
+@media (max-width:720px){
+    .controls{ flex-direction:column; }
+    .edit-form{ flex-direction:column; }
+}

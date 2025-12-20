@@ -1,35 +1,225 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Reviews Page</title>
+    <style>
+        :root{
+            --bg:#f6f8fb;
+            --card:#ffffff;
+            --muted:#666b75;
+            --accent:#2563eb;
+            --danger:#dc2626;
+            --radius:10px;
+            --max-width:1100px;
+        }
+        html,body{height:100%;}
+        body{
+            margin:0;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background:var(--bg);
+            color:#17202a;
+            -webkit-font-smoothing:antialiased;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content: flex-start;
+            padding:32px 20px;
+        }
+
+        .reviews-panel{
+            width:100%;
+            max-width:var(--max-width);
+            background:var(--card);
+            border-radius:var(--radius);
+            box-shadow:0 10px 30px rgba(20,30,60,0.08);
+            padding:28px;
+            box-sizing:border-box;
+        }
+
+        h1{font-size:1.6rem;margin:0 0 6px;text-align:center}
+        p{margin:0 0 18px;text-align:center;color:var(--muted)}
+
+        .controls{display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:flex-start;flex-wrap:wrap;margin-bottom:18px}
+
+        .filter-form{display:flex;gap:10px;align-items:end;width:100%;max-width:900px;min-width:260px}
+        .filter-form label{font-size:0.85rem;color:var(--muted)}
+        .filter-form input{padding:8px 10px;border-radius:6px;border:1px solid #e3e6ea;background:#fff}
+        .filter-form .btn-primary{padding:8px 12px}
+
+        .add-form{width:100%;max-width:900px;min-width:320px;background:#fbfdff;border:1px solid #eef3fb;padding:14px;border-radius:8px}
+        .add-form h2{margin:0 0 10px;font-size:1rem}
+        .add-form form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .add-form label{font-size:0.85rem;color:var(--muted);grid-column:span 1}
+        .add-form input,.add-form select{padding:8px;border-radius:6px;border:1px solid #e7ecf6;background:#fff}
+        .add-form .btn-primary{grid-column:span 2;justify-self:start;padding:8px 14px;margin-top:6px}
+
+        hr{border:none;border-top:1px solid #eef2f6;margin:16px 0}
+
+        .reviews-list h2{margin:6px 0 12px}
+        .muted{color:var(--muted)}
+
+        .reviews-table{width:100%;border-collapse:collapse;font-size:0.95rem}
+        .reviews-table th,.reviews-table td{padding:10px 12px;border-bottom:1px solid #f2f4f7;text-align:left}
+        .reviews-table thead th{background:#fbfdff;color:#374151;font-weight:600;border-bottom:2px solid #eef3fb}
+        .reviews-table tbody tr:nth-child(even){background:#fbfdff}
+        .reviews-table td.actions{width:220px}
+
+        .btn{display:inline-block;padding:8px 12px;border-radius:6px;text-decoration:none;border:1px solid transparent;background:transparent;color:var(--accent);cursor:pointer}
+        .btn-primary{background:var(--accent);color:#fff;border-color:transparent}
+        .btn-secondary{background:#eef3fb;color:#0f172a;border-color:transparent}
+        .btn-danger{background:var(--danger);color:#fff;border-color:transparent}
+
+        .inline-delete{display:inline-block;margin-left:8px}
+        .row-actions{margin-top:8px}
+
+        .pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px}
+
+        details.edit-details{background:#ffffff;border:1px solid #f0f3f8;padding:8px;border-radius:6px}
+        .edit-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .edit-form input,.edit-form select{padding:6px;border-radius:6px;border:1px solid #e7eefb}
+
+        @media (max-width:800px){
+            .add-form form{grid-template-columns:1fr}
+            .edit-form{grid-template-columns:1fr}
+            .filter-form{flex-direction:column;align-items:stretch}
+            .filter-form button,.filter-form .btn-secondary{width:100%}
+        }
+    </style>
 </head>
 <body>
     <h1>Welcome to the Reviews Page 🎬</h1>
-    <p>Here you will see all movie reviews!</p>
+    <p>Browse and manage movie reviews.</p>
 
-    <a href="/">Back to Home</a>
+    <a class="btn btn-primary" href="/">Back to Home</a>
+    <link rel="stylesheet" href="../static/styles.css">
 
-     <h1>Add a New Review</h1>
+    <section class="reviews-panel">
+        <div class="controls">
+            <form id="filter-form" method="GET" action="/reviews" class="filter-form">
+                <label for="movie_id">Movie ID</label>
+                <input type="number" id="movie_id" name="movie_id" value="{{ movie_id or '' }}" min="0">
 
-    <form action="/add_review" method="POST">
-        <label>Review ID:</label>
-        <input type="text" name="review_id" required>
-     
-        <label>User ID:</label>
-        <input type="text" name="user_id" required><br><br>
+                <label for="user_id">User ID</label>
+                <input type="number" id="user_id" name="user_id" value="{{ user_id or '' }}" min="0">
 
-        <label>Movie ID:</label>
-        <input type="text" name="movie_id" required><br><br>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="/reviews" class="btn-secondary">Reset</a>
+            </form>
 
-        <label>Rating (1–10):</label>
-        <input type="number" name="rating" min="1" max="10" required><br><br>
+            <div class="add-form">
+                <h2>Add a New Review</h2>
+                <form action="/add_review" method="POST">
+                    <label>Movie ID</label>
+                    <input type="number" name="movie_id" required value="{{ movie_id or '' }}">
 
-        <label>Device Type:</label>
-        <input type="text" name="device_type"><br><br>
+                    <label>User ID</label>
+                    <input type="text" name="user_id" required>
 
+                    <label>Rating (1-10)</label>
+                    <input type="number" name="rating" min="1" max="10" required>
 
-        <button type="submit">Submit Review</button>
-    </form>
+                    <label>Device Type</label>
+                    <input type="text" name="device_type">
+
+                    <label>Verified</label>
+                    <select name="is_verified">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+
+                    <button type="submit" class="btn-primary">Add Review</button>
+                </form>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="reviews-list">
+            <h2>Reviews</h2>
+            {% if reviews is none or reviews|length == 0 %}
+                <p class="muted">No reviews found.</p>
+            {% else %}
+                <table class="reviews-table">
+                    <thead>
+                        <tr>
+                            <th>Review ID</th>
+                            <th>User ID</th>
+                            <th>Movie ID</th>
+                            <th>Movie Title</th>
+                            <th>Rating</th>
+                            <th>Date</th>
+                            <th>Device</th>
+                            <th>Verified</th>
+                            <th>Votes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reviews %}
+                        <tr>
+                            <td>{{ r[0] }}</td>
+                            <td>{{ r[1] }}</td>
+                            <td>{{ r[2] }}</td>
+                            <td>{{ r[3] }}</td>
+                            <td>{{ r[4] }}</td>
+                            <td>{{ r[5] }}</td>
+                            <td>{{ r[6] }}</td>
+                            <td>{{ r[7] }}</td>
+                            <td>{{ r[8] }}</td>
+                            <td class="actions">
+                                <details class="edit-details">
+                                    <summary>Edit</summary>
+                                    <form method="POST" action="/update_review" class="edit-form">
+                                        <input type="hidden" name="review_id" value="{{ r[0] }}">
+                                        <input type="hidden" name="movie_id" value="{{ r[2] }}">
+                                        <label>Rating</label>
+                                        <input type="number" name="rating" value="{{ r[4] }}" min="1" max="10" required>
+                                        <label>Device Type</label>
+                                        <input type="text" name="device_type" value="{{ r[6] }}">
+                                        <label>Verified</label>
+                                        <select name="is_verified">
+                                            <option value="0" {% if r[7] == 0 or r[7] == '0' %}selected{% endif %}>No</option>
+                                            <option value="1" {% if r[7] == 1 or r[7] == '1' %}selected{% endif %}>Yes</option>
+                                        </select>
+                                        <label>Total Votes</label>
+                                        <input type="number" name="total_votes" value="{{ r[8] or 0 }}">
+                                        <div class="row-actions">
+                                            <button type="submit" class="btn-secondary">Save</button>
+                                        </div>
+                                    </form>
+                                </details>
+
+                                <form method="POST" action="/delete_review" class="inline-delete">
+                                    <input type="hidden" name="review_id" value="{{ r[0] }}">
+                                    <input type="hidden" name="movie_id" value="{{ r[2] }}">
+                                    <button type="submit" class="btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    {% if page > 1 %}
+                        <a href="/reviews?page={{ page-1 }}&movie_id={{ movie_id or '' }}&user_id={{ user_id or '' }}" class="btn">Previous</a>
+                    {% endif %}
+
+                    <span>Page {{ page }} of {{ total_pages }}</span>
+
+                    {% if page < total_pages %}
+                        <a href="/reviews?page={{ page+1 }}&movie_id={{ movie_id or '' }}&user_id={{ user_id or '' }}" class="btn">Next</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <script>
+        // No dynamic sync needed anymore; filters and add form movie_id are independent inputs.
+    </script>
 
 </body>
 </html>
