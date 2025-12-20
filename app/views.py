@@ -1,4 +1,4 @@
-from flask import render_template, request , render_template_string, redirect
+from flask import render_template, request , render_template_string, redirect, jsonify
 import mysql.connector
 from datetime import date
 from recommend import RecommendationLogs
@@ -8,7 +8,7 @@ from movies import Movies
 db = mysql.connector.connect(
     host= 'localhost',
     user='root',
-    password='medo',
+    password='jane2004',
     database='netflix2025'
 )
 
@@ -157,10 +157,11 @@ def delete_review():
     movie_id = request.form.get('movie_id') or ''
     return redirect(f"/reviews?movie_id={movie_id}")
 
-
 def watch_history():
+    user_filter = request.args.get("user_id") or None
+
     try:
-        query = """
+       base_query = """
         SELECT 
             wh.session_id AS ID,
             wh.user_id AS UserID,
@@ -171,18 +172,19 @@ def watch_history():
             wh.location_country AS Country,
             wh.user_rating AS Rating
         FROM watch_history wh
-        ORDER BY wh.watch_date DESC
-        LIMIT 100
         """
-    
-        cursor.execute(query)
-        watch_history_data = cursor.fetchall()
-        
-        return render_template(
-            "watch_history.html", 
-            watch_history=watch_history_data
-        )
-        
+       params = []
+       if user_filter:
+            base_query += " WHERE wh.user_id = %s "
+            params.append(user_filter)
+
+       base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
+
+       cursor.execute(base_query, tuple(params))
+       watch_history_data = cursor.fetchall()
+
+       return render_template("watch_history.html", watch_history=watch_history_data, user_id=user_filter)
+
     except Exception as e:
         print(f"Error fetching watch history: {e}")
         return render_template_string(f"""
@@ -196,34 +198,18 @@ def watch_history():
     # # return render_template("watch_history.html", watch_history = watch_history)
     # return render_template("watch_history.html")
 
-def delete_watch_history():
-
-    try: 
-        wh_id = request.form.get("primary_key")
-
-        query = """DELETE FROM watch_history WHERE session_id = %s"""
-        cursor.execute(query, (wh_id,))
-        db.commit()
-
-        return "Watch history entry deleted successfully. <a href='/watch_history'>Back to Watch History</a>"
-
-    except Exception as e:
-        return f"Error deleting entry: {e}"
-
 
 def delete_watch_history():
-
-    try: 
-        wh_id = request.form.get("primary_key")
-
-        query = """DELETE FROM watch_history WHERE session_id = %s"""
+    wh_id = request.form.get("primary_key")
+    if not wh_id:
+        return jsonify(success=False, error="missing primary_key"), 400
+    try:
+        query = "DELETE FROM watch_history WHERE session_id = %s"
         cursor.execute(query, (wh_id,))
         db.commit()
-
-        return "Watch history entry deleted successfully. <a href='/watch_history'>Back to Watch History</a>"
-
+        return jsonify(success=True, id=wh_id)
     except Exception as e:
-        return f"Error deleting entry: {e}"
+        return jsonify(success=False, error=str(e)), 500
 
 def recommend():
     rec_logs = RecommendationLogs(db)
