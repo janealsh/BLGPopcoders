@@ -126,6 +126,32 @@
       movie title to view more details.
     </p>
     <a class="home-button" href="/">Back to Home</a>
+    <div style="width: 90%; max-width: 1100px; margin: 8px 0">
+      <form
+        method="get"
+        action="/watch_history"
+        style="display: flex; gap: 8px; align-items: center"
+      >
+        <label for="user_id">Filter by User ID:</label>
+        <input
+          id="user_id"
+          name="user_id"
+          type="text"
+          value="{{ user_id or '' }}"
+          placeholder="enter user id"
+        />
+        <button
+          type="submit"
+          class="home-button"
+          style="background: #2563eb"
+        >
+          Show
+        </button>
+        <a href="/watch_history" class="home-button" style="background: #888;"
+          >Clear</a
+        >
+      </form>
+    </div>
     <div style="width: 90%">
       {% if watch_history %}
       <table>
@@ -149,7 +175,7 @@
           <th>Progress %</th>
           <th>Country</th>
           <th>Rating</th>
-          <th>Action</th>
+          <th>Actions</th>
         </tr>
         <tr>
           {% for row in watch_history %}
