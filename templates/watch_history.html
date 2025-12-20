@@ -39,7 +39,7 @@
         text-align: left;
       }
       th {
-        background-color: #efe2e2;
+        background-color: #e4ebfc;
         position: sticky;
         top: 0;
       }
@@ -50,7 +50,7 @@
         background-color: #f5f5f5;
       }
       .delete-button {
-        background-color: #b02615;
+        background-color: #dc2626;
         color: white;
         border: none;
         padding: 5px 10px;
@@ -59,13 +59,27 @@
       .delete-button:hover {
         background-color: #a02515;
       }
+      .home-button {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        margin-top: 8px;
+        text-decoration:none
+      }
+      .home-button:hover {
+        background-color: #1445b0;
+      }
+
     </style>
   </head>
   <body>
     <h1>Your Watch History</h1>
     <p>Below is the last 100 entries of your watch history. You can click on a movie title to view more details.</p>
-    <a href="/">Back to Home</a>
-    <div>
+    <a class="home-button" href="/">Back to Home</a>
+    <div style="width: 90%;">
       {% if watch_history %}
       <table>
         <tr>
@@ -95,7 +109,7 @@
               style="display: inline"
             >
               <input type="hidden" name="primary_key" value="{{ row[0] }}" />
-              <button class="delete-button" type="submit">Delete</button>
+              <button type="submit" class="delete-button">Delete</button>
             </form>
           </td>
         </tr>
