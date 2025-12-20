@@ -1,25 +1,24 @@
 import os
 
-class RecommendationLogs:
+class Movies:
     def __init__(self, connection):
-        self.columns = ['recommendation_id', 'user_id', 'movie_id', 'score', 'is_clicked', 'rank', 'device']
+        self.columns = ['movie_id', 'title', 'content_type', 'rating']
         self.connection = connection
 
-    def load_logs_from_csv(self):
-
+    def load_movies_from_csv(self):
         try:
             cursor = self.connection.cursor()
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            csv_path = os.path.join(base_dir, 'Tables', 'recommendation_logs.csv')
+            csv_path = os.path.join(base_dir, 'Tables', 'movies.csv')
             
             query = f"""
-                LOAD DATA LOCAL INFILE '../Tables/recommendation_logs.csv'
-                INTO TABLE recommendation_logs
+                LOAD DATA LOCAL INFILE '{csv_path}'
+                INTO TABLE movies
                 FIELDS TERMINATED BY ',' 
                 LINES TERMINATED BY '\\n'
                 IGNORE 1 ROWS
-                (recommendation_id, user_id, ...);
+                (movie_id, title, content_type, rating);
             """
             
             cursor.execute(query)
@@ -34,14 +33,14 @@ class RecommendationLogs:
     def generate_primary_key(self):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("SELECT MAX(recommendation_id) FROM recommendation_logs")
+            cursor.execute("SELECT MAX(movie_id) FROM movies")
             max_id = cursor.fetchone()[0]
             cursor.close()
             
             if max_id is None:
-                return "rec_000001"
+                return "movie_000001"
             
-            prefix = "rec_"
+            prefix = "movie_"
             try:
                 if max_id.startswith(prefix):
                     number_part = int(max_id[len(prefix):])
@@ -53,14 +52,14 @@ class RecommendationLogs:
                 return f"{prefix}000001"
 
         except Exception as e:
-            print("Error while generating primary key for recommendation_logs", e)
+            print("Error while generating primary key for movies", e)
             return f"Error: {e}"
 
-    def insert_data(self, data):
+    def insert_movie(self, data):
         try:
             cursor = self.connection.cursor()
 
-            data['recommendation_id'] = self.generate_primary_key()
+            data['movie_id'] = self.generate_primary_key()
 
             for key, value in data.items():
                 if value == 'None' or value == '':
@@ -68,7 +67,7 @@ class RecommendationLogs:
 
             insert_fields = ', '.join(self.columns)
             placeholders = ', '.join(['%s' for _ in self.columns])
-            insert_query = f"INSERT INTO recommendation_logs ({insert_fields}) VALUES ({placeholders})"
+            insert_query = f"INSERT INTO movies ({insert_fields}) VALUES ({placeholders})"
 
             insert_values = [data.get(col) for col in self.columns]
 
@@ -77,10 +76,10 @@ class RecommendationLogs:
             cursor.close()
             print("Inserted", insert_values)
         except Exception as e:
-            print("Error while inserting into recommendation_logs", e)
+            print("Error while inserting into movies", e)
             return f"Error: {e}"
 
-    def update_data(self, data, recommendation_id):
+    def update_movie(self, data, movie_id):
         try:
             cursor = self.connection.cursor()
             processed_data = [
@@ -89,29 +88,29 @@ class RecommendationLogs:
             ]
             update_fields = ', '.join([f"{field} = %s" for field in self.columns if field in data])
             
-            update_query = f"UPDATE recommendation_logs SET {update_fields} WHERE recommendation_id = %s"
+            update_query = f"UPDATE movies SET {update_fields} WHERE movie_id = %s"
             
             if processed_data:
-                cursor.execute(update_query, processed_data + [recommendation_id])
+                cursor.execute(update_query, processed_data + [movie_id])
                 self.connection.commit()
                 print("Updated", processed_data)
             cursor.close()
         except Exception as e:
-            print("Error while updating recommendation_logs", e)
+            print("Error while updating movies", e)
             return f"Error: {e}"
 
-    def delete_data(self, recommendation_id):
+    def delete_movie(self, movie_id):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM recommendation_logs WHERE recommendation_id=%s", (recommendation_id,))
+            cursor.execute("DELETE FROM movies WHERE movie_id=%s", (movie_id,))
             self.connection.commit()
             cursor.close()
-            print("Deleted", recommendation_id)
+            print("Deleted", movie_id)
         except Exception as e:
-            print("Error while deleting from recommendation_logs", e)
+            print("Error while deleting from movies", e)
             return f"Error: {e}"
 
-    def search(self, data):
+    def search_movies(self, data):
         try:
             cursor = self.connection.cursor()
             query_parts = []
@@ -124,7 +123,7 @@ class RecommendationLogs:
                     query_parts.append(f"{column} LIKE %s")
                 parameters.append(value)
             
-            query = "SELECT * FROM recommendation_logs WHERE " + " AND ".join(query_parts)
+            query = "SELECT * FROM movies WHERE " + " AND ".join(query_parts)
             cursor.execute(query, tuple(parameters))
             results = cursor.fetchall()
             columns = cursor.description 
@@ -136,7 +135,7 @@ class RecommendationLogs:
                 column_type = column[1]
                 try:
                     if 'get_mysql_data_types' in globals():
-                        # mysql_data_type = get_mysql_data_types(column_type)
+                        mysql_data_type = get_mysql_data_types(column_type)
                     else:
                         mysql_data_type = str(column_type)
                 except:
@@ -150,26 +149,14 @@ class RecommendationLogs:
             print("Could not find any corresponding value", e)
             return False
 
-    def get_all_logs(self, limit=1):
+    def select_movie(self, movie_id):
         try:
             cursor = self.connection.cursor(dictionary=True)
-            query = f"SELECT * FROM recommendation_logs LIMIT {limit}"
-            cursor.execute(query)
-            results = cursor.fetchall()
+            query = "SELECT * FROM movies WHERE movie_id = %s"
+            cursor.execute(query, (movie_id,))
+            result = cursor.fetchone()
             cursor.close()
-            return results
+            return result
         except Exception as e:
-            print(f"Error fetching all logs: {e}")
-            return []
-    
-    def get_random_logs(self, count=4):
-        try:
-            cursor = self.connection.cursor(dictionary=True)
-            query = f"SELECT * FROM recommendation_logs ORDER BY RAND() LIMIT {count}"
-            cursor.execute(query)
-            results = cursor.fetchall()
-            cursor.close()
-            return results
-        except Exception as e:
-            print(f"Error fetching random logs: {e}")
-            return []
+            print(f"Error fetching movie {movie_id}: {e}")
+            return None
