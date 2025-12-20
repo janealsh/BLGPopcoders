@@ -1,6 +1,8 @@
 from flask import render_template, request , render_template_string, redirect
 import mysql.connector
 from datetime import date
+from recommend import RecommendationLogs
+from movies import Movies
 
 # Database connection
 db = mysql.connector.connect(
@@ -177,4 +179,21 @@ def watch_history():
 
 
 def recommend():
-    return render_template("recommend.html")
+    rec_logs = RecommendationLogs(db)
+    movies = Movies(db)
+
+    try:
+        recommendations = rec_logs.get_random_logs(count=4)
+        movie_titles = []
+        for rec in recommendations:
+            movie = movies.select_movie(rec['movie_id'])
+            if movie:
+                movie_titles.append(movie['title'])
+            else:
+                print(f"No movie found for movie_id: {rec['movie_id']}")
+        
+        print(f"Recommendations: {len(recommendations)}, Titles: {len(movie_titles)}")
+        return render_template("recommend.html", recommendations=recommendations, movie_titles=movie_titles)
+    except Exception as e:
+        print(f"Error fetching recommendations: {e}")
+        return render_template("recommend.html", recommendations=[], movie_titles=[], error=str(e))
