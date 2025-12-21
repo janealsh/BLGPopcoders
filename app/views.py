@@ -98,13 +98,9 @@ def reviews():
     except Exception:
         page = 1
 
-    print("We're here!!")
-
     per_page = 20
     movie_id = request.args.get('movie_id') or None
     user_id = request.args.get('user_id') or None
-
-    print(f"movie_id: {movie_id}, user_id: {user_id}")
 
     where_clauses = []
     params = []
@@ -126,17 +122,29 @@ def reviews():
 
         offset = (page - 1) * per_page
         sql = f"""
+
+        
             SELECT reviews.review_id, reviews.user_id, reviews.movie_id, movies.title AS movie_title,
                    reviews.rating, reviews.review_date, reviews.device_type, reviews.is_verified_watch, reviews.total_votes
             FROM reviews
             LEFT JOIN movies ON reviews.movie_id = movies.movie_id
             {where_sql}
-            ORDER BY review_date DESC
+            ORDER BY reviews.review_id ASC
+
+
             LIMIT %s OFFSET %s
         """
         exec_params = params + [per_page, offset]
         cursor.execute(sql, tuple(exec_params))
         reviews = cursor.fetchall()
+        # add a contiguous display index (1-based) that reflects position across pages
+        new_reviews = []
+        start_index = offset + 1
+        for i, row in enumerate(reviews, start=start_index):
+            # row is (review_id, user_id, movie_id, movie_title, rating, review_date, device_type, is_verified_watch, total_votes)
+            # append display index at the end so templates can show a contiguous number while preserving the real review_id
+            new_reviews.append(tuple(list(row) + [i]))
+        reviews = new_reviews
         print(f"Fetched {len(reviews)} reviews for page {page}")
     except Exception as e:
         print(f"Error fetching reviews: {e}")
@@ -245,6 +253,7 @@ def watch_history():
 
 
 def recommend():
+
     rec_logs = RecommendationLogs(db)
     movies = Movies(db)
 
