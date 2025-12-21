@@ -146,6 +146,13 @@ def create_database_and_tables(config=DB_CONFIG):
                 print(f"Error selecting database '{database_name}': {err}")
                 raise
 
+        # Drop recommendation_logs if it exists to fix schema issue
+        try:
+            cursor.execute("DROP TABLE IF EXISTS recommendation_logs")
+            print("Dropped existing recommendation_logs table (if any).")
+        except mysql.connector.Error as err:
+            print(f"Error dropping recommendation_logs: {err}")
+
         # Create tables in defined order
         for name, stmt in CREATE_TABLES_SQL:
             try:
