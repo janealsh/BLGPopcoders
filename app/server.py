@@ -1,22 +1,37 @@
-from flask import Flask, render_template
+try:
+    from flask import Flask
+except ImportError as e:
+    raise RuntimeError("Missing dependency 'Flask'. Install with: python -m pip install Flask") from e
 from pathlib import Path
-import views
-
 
 def create_app():
+    templates_dir = Path(__file__).resolve().parents[1] / "templates"
+    app = Flask(__name__, template_folder=str(templates_dir))
     base_dir = Path(__file__).resolve().parents[1]
     templates_dir = base_dir / "templates"
     static_dir = base_dir / "static"
     app = Flask(__name__, template_folder=str(templates_dir), static_folder=str(static_dir))    
     app.config["DEBUG"] = True
     app.config["PORT"] = 8080
+    app.secret_key = "your-secret-key-change-in-production"
 
+    # Import views here to avoid circular imports during module import
+    try:
+        from . import views
+    except Exception:
+        from app import views
 
+    # Main pages
     app.add_url_rule("/", view_func=views.home)
     app.add_url_rule("/movies", view_func=views.movies)
     app.add_url_rule("/movie", view_func=views.movie_detail)
     app.add_url_rule("/reviews", view_func=views.reviews)
     app.add_url_rule("/watch_history", view_func=views.watch_history)
+    app.add_url_rule("/recommend", view_func=views.recommend)
+    
+    # Reviews (from main)
+    
+    app.add_url_rule("/add_review_form", view_func=views.add_review_form)
     app.add_url_rule("/recommend", view_func=views.recommend, methods=["GET", "POST"])
     
     app.add_url_rule("/add_review", view_func=views.add_review, methods=["POST"])
@@ -27,11 +42,25 @@ def create_app():
     app.add_url_rule("/click-recommendation", view_func=views.click_recommendation, methods=["POST"])
 
 
+    # Search logs
+    app.add_url_rule("/search-logs", view_func=views.search_logs)
+    app.add_url_rule("/search-logs/add", view_func=views.add_search_log, methods=["POST"])
+    app.add_url_rule("/search-logs/delete/<int:search_id>", view_func=views.delete_search_log, methods=["POST"])
+    app.add_url_rule("/search-logs/edit/<int:search_id>", view_func=views.edit_search_log)
+    app.add_url_rule("/search-logs/update", view_func=views.update_search_log, methods=["POST"])
+    # Users CRUD
+    app.add_url_rule("/users", view_func=views.users_list)
+    app.add_url_rule("/users/add", view_func=views.add_user, methods=["POST"])
+    app.add_url_rule("/users/edit/<user_id>", view_func=views.edit_user)
+    app.add_url_rule("/users/update", view_func=views.update_user, methods=["POST"])
+    app.add_url_rule("/users/delete/<user_id>", view_func=views.delete_user, methods=["POST"])
+    # Analytics / complex queries
+    app.add_url_rule("/analytics", view_func=views.analytics)
 
     return app
 
+app = create_app()
 
 if __name__ == "__main__":
-    app = create_app()
     port = app.config.get("PORT", 5000)
     app.run(host="0.0.0.0", port=port)

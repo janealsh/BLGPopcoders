@@ -3,12 +3,13 @@ from mysql.connector import errorcode
 import os
 import re
 
-# Configuration - match credentials in database.py
+# Configuration - read from environment variables with sensible defaults
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'medo',
-    'database': 'netflix2025'
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', 'Popcoder2025'),
+    'database': os.environ.get('DB_NAME', 'netflix2025'),
+    'port': int(os.environ.get('DB_PORT', 3306)),
 }
 
 
@@ -237,7 +238,7 @@ def import_reviews_table():
                 total_votes = int(float(fields[7])) if fields[7] not in ("", None) else 0
 
                 insert_query = """
-                    INSERT ignore INTO reviews (review_id, user_id, movie_id, rating, review_date, device_type, is_verified_watch, total_votes)
+                    INSERT IGNORE INTO reviews (review_id, user_id, movie_id, rating, review_date, device_type, is_verified_watch, total_votes)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (review_csv_id, mapped_user_id, mapped_movie_id, rating, review_date, device_type, is_verified_watch, total_votes))
@@ -254,12 +255,70 @@ def import_reviews_table():
         conn.close()
 
 
+def import_search_logs_table():
+    conn = connect_to_db()
+    if conn is None:
+        print("Failed to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/search_logs.csv')
+
+    # search_logs CSV columns (assumed): search_id,user_id,search_query,search_date,clicked_result_position,location_country
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            next(file)  # skip header
+            for line in file:
+                fields = line.strip().split(',')
+                if len(fields) < 4:  # minimum fields required
+                    continue
+
+                search_csv_id = extract_int_id(fields[0]) if len(fields) > 0 else None
+                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
+                search_query = fields[2].strip() if len(fields) > 2 else None
+                search_date = fields[3].strip() if len(fields) > 3 else None
+                clicked_pos = int(fields[4]) if len(fields) > 4 and fields[4].strip() else None
+                location_country = fields[5].strip() if len(fields) > 5 else None
+
+                # map user_csv_id to canonical user_id using import_user_map
+                mapped_user_id = None
+                if user_csv_id is not None:
+                    cursor.execute("SELECT user_id FROM import_user_map WHERE csv_id = %s LIMIT 1", (user_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_user_id = r[0]
+                    else:
+                        # fallback: try direct id match in users table
+                        cursor.execute("SELECT user_id FROM users WHERE user_id = %s LIMIT 1", (user_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_user_id = r2[0]
+
+                insert_query = """
+                    INSERT IGNORE INTO search_logs (search_id, user_id, search_query, search_date, clicked_result_position, location_country)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (search_csv_id, mapped_user_id, search_query, search_date, clicked_pos, location_country))
+
+            conn.commit()
+            print("Search logs data imported successfully.")
+    except FileNotFoundError:
+        print(f"ERROR: File '{csv_file_path}' not found. Check the file path.")
+    except mysql.connector.Error as err:
+        print(f"Error importing search_logs data: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def main():
     import_users_table()
     input("Press Enter to continue to import movies...")
     import_movies_table()
     input("Press Enter to continue to import reviews...")
     import_reviews_table()
+    input("Press Enter to continue to import search_logs...")
+    import_search_logs_table()
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+    <title>Search Logs Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid #333;
+            padding: 8px;
+        }
+        th {
+            background-color: #ddd;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, button {
+            margin: 5px 0;
+        }
+        button {
+            cursor: pointer;
+        }
+        .delete-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 Search Logs Manager</h1>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="background:#eef;padding:10px;border:1px solid #99c;margin-bottom:12px;">
+                    {% for m in messages %}
+                        <div>{{ m }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Add Search Form -->
+    <h3>Add New Search Log</h3>
+    <form action="{{ url_for('add_search_log') }}" method="POST">
+        <label>User (enter name or email):</label><br>
+        <input type="text" name="user_name" placeholder="First name (e.g. Alice)">
+        <input type="email" name="user_email" placeholder="or email@example.com"><br>
+
+        <label>Or existing User ID (optional):</label><br>
+        <input type="text" name="user_id" placeholder="Existing user id (optional)"><br>
+
+        <label>Search Query:</label><br>
+        <input type="text" name="search_query" required><br>
+
+        <label>Location Country:</label><br>
+        <input type="text" name="location_country" value="USA"><br>
+
+        <label>Clicked Result Position (optional):</label><br>
+        <input type="number" name="clicked_result_position"><br>
+
+        <button type="submit">Add Log</button>
+    </form>
+
+    <!-- Filter by user -->
+    <h3>Filter</h3>
+    <form method="GET" action="{{ url_for('search_logs') }}">
+        <label>Filter by user:</label>
+        <select name="user">
+            <option value="">-- All users --</option>
+            {% if users_list %}
+                {% for u in users_list %}
+                    <option value="{{ u.user_id }}" {% if user_filter and user_filter == u.user_id %}selected{% endif %}>{{ u.display }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <button type="submit">Filter</button>
+        <a href="{{ url_for('search_logs') }}" style="margin-left:8px;">Clear</a>
+    </form>
+
+    <!-- Logs Table -->
+        <h3>Recent Search Logs</h3>
+        {% if not logs %}
+            <p><em>No search logs yet.</em></p>
+        {% endif %}
+    <table>
+        <tr>
+            <!--<th>ID</th>-->
+            <th>User</th>
+            <th>Query</th>
+            <th>Date</th>
+            <th>Country</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for row in logs %}
+        <tr>
+                        <!-- display name if available, else email, else user_id -->
+                        <td>
+                            {% set display = row.user_name %}
+                            {% if not display or display == 'None' %}
+                                {% set display = row.user_email %}
+                            {% endif %}
+                            {% if not display or display == 'None' %}
+                                {% set display = row.user_id %}
+                            {% endif %}
+                            {% set display = display or 'Guest' %}
+                            {{ display }}
+                        </td>
+            <td>{{ row.search_query }}</td>
+            <td>{{ row.search_date }}</td>
+            <td>{{ row.location_country }}</td>
+            <td>
+                <a href="{{ url_for('edit_search_log', search_id=row.search_id) }}" style="margin-right:8px;">Edit</a>
+                <form method="POST" action="{{ url_for('delete_search_log', search_id=row.search_id) }}" style="display:inline">
+                    <button type="submit" class="delete-btn">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Pagination controls -->
+    <div style="margin-top:12px;">
+        <span>Page {{ page }} of {{ total_pages }}</span>
+        {% if page > 1 %}
+            <a href="{{ url_for('search_logs', page=page-1) }}">&laquo; Prev</a>
+        {% endif %}
+        {% if page < total_pages %}
+            <a href="{{ url_for('search_logs', page=page+1) }}" style="margin-left:12px;">Next &raquo;</a>
+        {% endif %}
+    </div>
+
+</body>
+</html>
