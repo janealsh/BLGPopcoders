@@ -1,19 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <title>Edit Watch History</title>
     <style>
-      body{font-family:Arial,Helvetica,sans-serif;background:#f6f8fb;padding:20px}
-      form{max-width:800px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.06)}
-      label{display:block;margin:8px 0 4px;font-weight:600}
-      input,select{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box}
-      .row{display:flex;gap:12px}
-      .row>div{flex:1}
-      .actions{margin-top:12px;display:flex;gap:8px}
-      .btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer}
-      .save{background:#2563eb;color:#fff}
-      .cancel{background:#888;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f6f8fb;
+        padding: 20px;
+      }
+      form {
+        max-width: 800px;
+        background: #fff;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      }
+      label {
+        display: block;
+        margin: 8px 0 4px;
+        font-weight: 600;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+      }
+      .row > div {
+        flex: 1;
+      }
+      .actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+      }
+      .save {
+        background: #2563eb;
+        color: #fff;
+      }
+      .cancel {
+        background: #888;
+        color: #fff;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
     </style>
   </head>
   <body>
@@ -35,14 +80,31 @@
         </div>
         <div>
           <label>Mins watched</label>
-          <input type="number" step="0.01" name="watch_duration_minutes" value="{{ e[4] }}" />
+          <input
+            type="number"
+            step="0.01"
+            name="watch_duration_minutes"
+            value="{{ e[4] }}"
+          />
         </div>
       </div>
 
       <div class="row">
         <div>
           <label>Progress %</label>
-          <input type="number" step="0.01" name="progress_percentage" value="{{ e[5] }}" />
+
+          <div style="display: flex; align-items: center; gap: 8px">
+            <input
+              id="progress_range"
+              type="range"
+              name="progress_percentage"
+              min="0"
+              max="100"
+              step="0.01"
+              value="{{ e[5] or 0 }}"
+            />
+            <span id="progress_value">{{ e[5] or 0 }}</span>%
+          </div>
         </div>
         <div>
           <label>Rating</label>
@@ -57,6 +119,18 @@
         <button type="submit" class="btn save">Save</button>
         <a href="/watch_history" class="btn cancel">Cancel</a>
       </div>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const range = document.getElementById("progress_range");
+          const display = document.getElementById("progress_value");
+          if (range && display) {
+            // keep display in sync while sliding
+            range.addEventListener("input", () => {
+              display.textContent = range.value;
+            });
+          }
+        });
+      </script>
     </form>
   </body>
 </html>
