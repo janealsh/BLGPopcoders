@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>{{ movie.title }} - Movie Details</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+</head>
+<body>
+<div class="reviews-panel">
+    <h1>🎬 {{ movie.title }}</h1>
+    <a href="/recommend" class="btn-secondary" style="display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: white; margin-bottom: 20px;">Back to Recommendations</a>
+    <a href="/movies" class="btn-secondary" style="display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: white; margin-bottom: 20px;">All Movies</a>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Movie ID:</strong> {{ movie.movie_id }}</p>
+        <p><strong>Genre:</strong> {{ movie.genre if movie.genre else 'N/A' }}</p>
+        <p><strong>Release Year:</strong> {{ movie.release_year if movie.release_year else 'N/A' }}</p>
+    </div>
+    
+    <h2>Reviews</h2>
+    {% if reviews %}
+    <p>{{ reviews|length }} reviews found</p>
+    {% else %}
+    <p>No reviews yet for this movie.</p>
+    {% endif %}
+</div>
+</body>
+</html>

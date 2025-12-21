@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Popular Movies</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+<style>
+    .movie-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px 0;
+    }
+    .movie-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .movie-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .movie-rank {
+        font-size: 32px;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    .movie-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    .movie-info {
+        font-size: 14px;
+        color: #666;
+        margin-top: 10px;
+    }
+    .movie-info span {
+        display: block;
+        margin: 5px 0;
+    }
+    .popularity-badge {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+<div class="reviews-panel">
+    <h1>🎬 Top 20 Popular Movies</h1>
+    <p>Most watched and highest rated movies on our platform</p>
+    <a href="/" class="btn-secondary" style="display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: white; margin-bottom: 20px;">Back to Home</a>
+
+    {% if movies %}
+    <div class="movie-grid">
+        {% for movie in movies %}
+        <div class="movie-card" onclick="window.location.href='/movie?movie_id={{ movie.movie_id }}'">
+            <div class="movie-rank">#{{ loop.index }}</div>
+            <div class="movie-title">{{ movie.title }}</div>
+            <div class="movie-info">
+                <span><strong>Movie ID:</strong> {{ movie.movie_id }}</span>
+                <span><strong>Genre:</strong> {{ movie.genre if movie.genre else 'N/A' }}</span>
+                <span><strong>Release Year:</strong> {{ movie.release_year if movie.release_year else 'N/A' }}</span>
+            </div>
+            <div class="popularity-badge">⭐ Popular</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No movies found.</p>
+    {% endif %}
+</div>
+</body>
+</html>

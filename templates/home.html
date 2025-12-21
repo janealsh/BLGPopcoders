@@ -26,6 +26,27 @@
 </style>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <meta charset="utf-8" />
+    <title>Popcoders home</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f6f9ff,#ffffff);color:#102a43;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+        .header{width:100%;max-width:980px;padding:20px 16px;display:flex;justify-content:space-between;align-items:center}
+        .brand h1{font-size:1.4rem;color:#0b3a66}
+        nav ul{list-style:none;display:flex;gap:12px}
+        nav a{color:#0b66a3;text-decoration:none;padding:8px 12px;border-radius:8px}
+        nav a:hover{background:#e6f0fb}
+        .container{width:100%;max-width:980px;padding:24px 16px}
+        .hero{background:white;border-radius:12px;padding:28px;box-shadow:0 6px 20px rgba(16,42,67,0.08);margin-bottom:20px;text-align:center}
+        .hero h2{font-size:1.4rem;margin-bottom:8px}
+        .hero p{color:#405169}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+        .card{background:white;border-radius:10px;padding:18px;box-shadow:0 4px 14px rgba(16,42,67,0.06);text-align:center}
+        .card a{display:inline-block;margin-top:10px;padding:10px 14px;background:#0b66a3;color:white;border-radius:8px;text-decoration:none}
+        .footer{margin-top:auto;padding:20px;color:#6b7885}
+        @media (max-width:480px){.header{padding:16px}.hero{padding:20px}}
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 
 <body>
@@ -81,6 +102,24 @@
         <p>View aggregated analytics: searches, watches, and top queries by country.</p>
         <a href="{{ url_for('analytics') }}">Open</a>
     </div>
+    <header class="header">
+        <div class="brand">
+            <h1>Popcoders</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('watch_history') }}">Watch History</a></li>
+                <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
+                <li><a href="{{ url_for('recommend') }}">Recommend</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h2>Movie Tracker: Popcoders!</h2>
+            <p>Keep track of what you've watched, add reviews, and get recommendations.</p>
+        </section>
 
     <div class="card">
         <h3>Manage Users</h3>
@@ -90,6 +129,6 @@
     </section>
 </main>
 
-<footer class="footer">Made with ♥ — Poptracker</footer>
+    <footer class="footer">Made with ♥ — Popcoders</footer>
 </body>
 </html>
