@@ -135,9 +135,10 @@
   <body>
     <h1>Your Watch History</h1>
     <p>
-      Below is the last 100 entries of your watch history. You can click on a
-      movie title to view more details.
+      Below is the last 100 entries of all users' watch history. Enter your user
+      ID to find your history.
     </p>
+    <p>You can delete your watch history, or be sneaky and edit it!</p>
     <a class="home-button" href="/">Back to Home</a>
     <div style="width: 90%; max-width: 1100px; margin: 8px 0">
       <form
@@ -145,21 +146,133 @@
         action="/watch_history"
         style="display: flex; gap: 8px; align-items: center"
       >
-        <label for="user_name">Find your watch history:</label>
+        <label for="user_id">Find your watch history:</label>
         <input
-          id="user_name"
-          name="user_name"
+          id="user_id"
+          name="user_id"
           type="text"
-          value="{{ user_name or '' }}"
-          placeholder="Enter your name"
+          value="{{ user_id or '' }}"
+          placeholder="Enter your user id"
         />
-        <button type="submit" class="home-button" style="font-size: 14px; background: #2563eb">
+        <button
+          type="submit"
+          class="home-button"
+          style="font-size: 14px; background: #2563eb"
+        >
           Show
         </button>
-        <a href="/watch_history" class="home-button" style="font-size: 14px; background: #888"
+        <a
+          href="/watch_history"
+          class="home-button"
+          style="font-size: 14px; background: #888"
           >Clear</a
         >
       </form>
+      {% if completion_data %}
+      <div
+        style="
+          margin: 20px 0;
+          padding: 16px;
+          background-color: #f9fafb;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <div>
+          <h3 style="margin: 0 0 8px 0; color: #1e40af; font-size: 18px">
+            Finish These Movies
+          </h3>
+          <p style="margin: 0; color: #4b5563; font-size: 14px">
+            To the right are movies that you started, but didn't finish, while
+            many other users did. Try watching it again, you might like it!
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 16px">
+          {% for movie in completion_data %}
+          <div
+            style="
+              background: white;
+              padding: 12px;
+              border-radius: 8px;
+              min-width: 180px;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+              border: 1px solid #e5e7eb;
+            "
+          >
+            <div
+              style="
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 8px;
+                font-size: 14px;
+              "
+            >
+              {{ movie[0] }}
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div>
+                <div style="font-size: 12px; color: #6b7280">Your progress</div>
+                <div
+                  style="
+                    background: #fee2e2;
+                    color: #dc2626;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    display: inline-block;
+                  "
+                >
+                  {{ movie[1] }}%
+                </div>
+              </div>
+              <div style="text-align: right">
+                <div style="font-size: 12px; color: #6b7280">
+                  Average progress
+                </div>
+                <div
+                  style="
+                    background: #dcfce7;
+                    color: #16a34a;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    display: inline-block;
+                  "
+                >
+                  {{ movie[2] }}%
+                </div>
+              </div>
+            </div>
+            <div
+              style="
+                margin-top: 8px;
+                font-size: 12px;
+                color: #6b7280;
+                text-align: center;
+                background: #f9fafb;
+                padding: 4px;
+                border-radius: 6px;
+              "
+            >
+              Completed by {{ movie[3] }} user{% if movie[3] != 1 %}s{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
     <div style="width: 90%">
       {% if watch_history %}
@@ -195,8 +308,14 @@
           <td>{{ value }}</td>
           {% endfor %}
           <td>
-            <a href="/edit_watch_history/{{ row[0] }}" class="edit-button">Edit</a>
-            <form action="/delete_watch_history" method="post" style="display: inline">
+            <a href="/edit_watch_history/{{ row[0] }}" class="edit-button"
+              >Edit</a
+            >
+            <form
+              action="/delete_watch_history"
+              method="post"
+              style="display: inline"
+            >
               <input type="hidden" name="primary_key" value="{{ row[0] }}" />
               <button type="submit" class="delete-button">Delete</button>
             </form>
