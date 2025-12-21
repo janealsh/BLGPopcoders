@@ -7,7 +7,7 @@ import re
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST', 'localhost'),
     'user': os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', 'Popcoder2025'),
+    'password': os.environ.get('DB_PASSWORD', 'PopC.2025'),
     'database': os.environ.get('DB_NAME', 'netflix2025'),
     'port': int(os.environ.get('DB_PORT', 3306)),
 }
@@ -310,6 +310,116 @@ def import_search_logs_table():
         cursor.close()
         conn.close()
 
+def import_recommendation_logs_table():
+    conn = connect_to_db()
+    if conn is None:
+        print("Failed to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/recommendation_logs.csv')
+
+    # recommendation_id,user_id,movie_id,score,clicked,position,device
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            next(file)  # skip header
+            for line in file:
+                fields = line.strip().split(',')
+                if len(fields) < 7:
+                    print(f"Skipping malformed line: {line.strip()}")
+                    continue
+                recommendation_id = fields[0].strip()
+                # user_id ve movie_id'yi INT olarak çekip, mapping tablosundan gerçek id'yi bul
+                user_csv_id = extract_int_id(fields[1])
+                movie_csv_id = extract_int_id(fields[2])
+                mapped_user_id = None
+                mapped_movie_id = None
+                if user_csv_id is not None:
+                    cursor.execute("SELECT user_id FROM import_user_map WHERE csv_id = %s LIMIT 1", (user_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_user_id = r[0]
+                    else:
+                        cursor.execute("SELECT user_id FROM users WHERE user_id = %s LIMIT 1", (user_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_user_id = r2[0]
+                if movie_csv_id is not None:
+                    cursor.execute("SELECT movie_id FROM import_movie_map WHERE csv_id = %s LIMIT 1", (movie_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_movie_id = r[0]
+                    else:
+                        cursor.execute("SELECT movie_id FROM movies WHERE movie_id = %s LIMIT 1", (movie_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_movie_id = r2[0]
+                try:
+                    score = float(fields[3]) if fields[3] not in ("", "NaN", "nan", "None", "null") else None
+                except ValueError:
+                    score = None
+                clicked = 1 if fields[4].strip().lower() in ("1", "true", "yes") else 0
+                position = int(fields[5]) if fields[5] else None
+                device = fields[6].strip() or None
+
+                print("INSERT:", recommendation_id, mapped_user_id, mapped_movie_id, score, clicked, position, device)
+                insert_query = """
+                    INSERT IGNORE INTO recommendation_logs (recommendation_id, user_id, movie_id, score, clicked, position, device)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (recommendation_id, mapped_user_id, mapped_movie_id, score, clicked, position, device))
+            conn.commit()
+            print("Recommendation logs data imported successfully.")
+    except FileNotFoundError:
+        print(f"ERROR: File '{csv_file_path}' not found. Check the file path.")
+    except mysql.connector.Error as err:
+        print(f"Error importing recommendation logs data: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+def import_watch_history_table():
+    conn = connect_to_db()
+    if conn is None:
+        print("Failed to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/watch_history.csv')
+
+    # session_id,user_id,movie_id,watch_date,watch_duration_minutes,progress_percentage,location_country,user_rating
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            next(file)  # skip header
+            for line in file:
+                fields = line.strip().split(',')
+                if len(fields) < 8:
+                    print(f"Skipping malformed line: {line.strip()}")
+                    continue
+                session_id = fields[0].strip()
+                user_id = fields[1].strip()
+                movie_id = fields[2].strip()
+                watch_date = fields[3].strip() or None
+                watch_duration_minutes = int(float(fields[4])) if fields[4] else None
+                progress_percentage = int(float(fields[5])) if fields[5] else None
+                location_country = fields[6].strip() or None
+                user_rating = int(float(fields[7])) if fields[7] else None
+
+                insert_query = """
+                    INSERT IGNORE INTO watch_history (session_id, user_id, movie_id, watch_date, watch_duration_minutes, progress_percentage, location_country, user_rating)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (session_id, user_id, movie_id, watch_date, watch_duration_minutes, progress_percentage, location_country, user_rating))
+            conn.commit()
+            print("Watch history data imported successfully.")
+    except FileNotFoundError:
+        print(f"ERROR: File '{csv_file_path}' not found. Check the file path.")
+    except mysql.connector.Error as err:
+        print(f"Error importing watch history data: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def main():
     import_users_table()
@@ -319,6 +429,10 @@ def main():
     import_reviews_table()
     input("Press Enter to continue to import search_logs...")
     import_search_logs_table()
+    input("Press Enter to continue to import recommendation_logs...")
+    import_recommendation_logs_table()
+    input("Press Enter to continue to import watch_history...")
+    import_watch_history_table()
 
 if __name__ == "__main__":
     main()
