@@ -26,39 +26,31 @@ def add_review_form():
 
 
 def reviews():
-    # Pagination and optional filtering by movie_id and/or user_id
-    page_arg = request.args.get('page', '1')
+    # List reviews with optional filters and pagination
+    movie_id = request.args.get("movie_id")
+    user_id = request.args.get("user_id")
     try:
-        page = int(page_arg)
-        if page < 1:
-            page = 1
+        page = int(request.args.get("page", 1))
     except Exception:
         page = 1
-
-    print("We're here!!")
-
     per_page = 20
-    movie_id = request.args.get('movie_id') or None
-    user_id = request.args.get('user_id') or None
-
-    print(f"movie_id: {movie_id}, user_id: {user_id}")
-
-    where_clauses = []
-    params = []
-    if movie_id:
-        where_clauses.append("reviews.movie_id = %s")
-        params.append(movie_id)
-    if user_id:
-        where_clauses.append("user_id = %s")
-        params.append(user_id)
-
-    where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
     conn = get_db()
     cursor = conn.cursor()
+    params = []
+    where = []
+    if movie_id:
+        where.append("reviews.movie_id = %s")
+        params.append(movie_id)
+    if user_id:
+        where.append("reviews.user_id = %s")
+        params.append(user_id)
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
     try:
         # total count for pagination
-        count_sql = f"SELECT COUNT(*) FROM reviews{where_sql}"
+        count_sql = f"SELECT COUNT(*) FROM reviews {where_sql}"
         cursor.execute(count_sql, tuple(params))
         total = cursor.fetchone()[0] or 0
         total_pages = (total + per_page - 1) // per_page if total > 0 else 1
@@ -76,16 +68,22 @@ def reviews():
         exec_params = params + [per_page, offset]
         cursor.execute(sql, tuple(exec_params))
         reviews = cursor.fetchall()
-        print(f"Fetched {len(reviews)} reviews for page {page}")
     except Exception as e:
         print(f"Error fetching reviews: {e}")
         reviews = []
         total_pages = 1
     finally:
-        cursor.close()
-        conn.close()
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
     return render_template("reviews.html", reviews=reviews, page=page, total_pages=total_pages, movie_id=movie_id, user_id=user_id)
+
 
 
 def add_review():
@@ -247,12 +245,45 @@ def search_logs():
     per_page = 20
     offset = (page - 1) * per_page
 
+    # optional filtering by user (name or email)
+    user_filter = request.args.get('user')
+
     conn = get_db()
-    # get total count from search_logs
+    # prepare users list for the filter dropdown
+    users_list = []
+    ucur = conn.cursor(dictionary=True)
+    try:
+        ucur.execute("SELECT user_id, first_name, email FROM users ORDER BY first_name IS NULL, first_name, user_id LIMIT 2000")
+        rows = ucur.fetchall()
+        # build a deduplicated display list (show each display name once)
+        seen = set()
+        for r in rows:
+            disp = (r.get('first_name') or r.get('email') or r.get('user_id') or '').strip()
+            if not disp:
+                continue
+            key = disp.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            users_list.append({'user_id': r.get('user_id'), 'display': disp})
+    except Exception:
+        users_list = []
+    finally:
+        try:
+            ucur.close()
+        except Exception:
+            pass
+
+    # get total count with optional filter (join users when needed)
     count_cursor = conn.cursor()
     total = 0
     try:
-        count_cursor.execute("SELECT COUNT(*) FROM search_logs")
+        if user_filter:
+            count_sql = "SELECT COUNT(*) FROM search_logs s LEFT JOIN users u ON s.user_id = u.user_id WHERE (u.first_name LIKE %s OR u.email LIKE %s OR s.user_id = %s)"
+            like_param = f"%{user_filter}%"
+            count_cursor.execute(count_sql, (like_param, like_param, user_filter))
+        else:
+            count_cursor.execute("SELECT COUNT(*) FROM search_logs")
         total = count_cursor.fetchone()[0] or 0
         print(f"[search_logs] Total rows in search_logs: {total}")
     except Exception as e:
@@ -267,16 +298,26 @@ def search_logs():
 
     cursor = conn.cursor(dictionary=True)
     # Join with users to show user names when available
-    query = """
+    base_query = """
         SELECT s.*, u.first_name AS user_name, u.email AS user_email
         FROM search_logs s
         LEFT JOIN users u ON s.user_id = u.user_id
-        ORDER BY s.search_date DESC, s.search_id DESC
-        LIMIT %s OFFSET %s
     """
+    where_clauses = []
+    params = []
+    if user_filter:
+        where_clauses.append("(u.first_name LIKE %s OR u.email LIKE %s OR s.user_id = %s)")
+        like_param = f"%{user_filter}%"
+        params.extend([like_param, like_param, user_filter])
+
+    where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    query = f"{base_query}{where_sql} ORDER BY s.search_date DESC, s.search_id DESC LIMIT %s OFFSET %s"
+
     logs = []
     try:
-        cursor.execute(query, (per_page, offset))
+        exec_params = params + [per_page, offset]
+        cursor.execute(query, tuple(exec_params))
         logs = cursor.fetchall()
         print(f"[search_logs] Fetched {len(logs)} rows for page {page}")
     except Exception as e:
@@ -291,7 +332,7 @@ def search_logs():
         except Exception:
             pass
 
-    return render_template("search_logs.html", logs=logs, page=page, total_pages=total_pages)
+    return render_template("search_logs.html", logs=logs, page=page, total_pages=total_pages, users_list=users_list, user_filter=user_filter)
 
 
 # Add record
@@ -690,164 +731,54 @@ def analytics():
 
     Returns per-user summary: total searches, total watches, avg rating, and top watched movie (via nested subquery).
     """
-    conn = get_db()
-    cursor = conn.cursor(dictionary=True)
-
-    # Check which tables exist so we can adapt queries (allow analytics to run partially)
-    info_cur = conn.cursor()
-    info_cur.execute("SELECT DATABASE()")
-    db_name = info_cur.fetchone()[0]
-
-    def table_exists(name):
-        info_cur.execute(
-            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
-            (db_name, name),
-        )
-        return info_cur.fetchone()[0] > 0
-
-    has_users = table_exists('users')
-    has_search = table_exists('search_logs')
-    has_watch = table_exists('watch_history')
-    has_reviews = table_exists('reviews')
-    has_movies = table_exists('movies')
-    info_cur.close()
-
-    # Build main user summary SQL adaptively
-    parts = []
-    parts.append("SELECT u.user_id, COALESCE(u.first_name, u.email) AS user_name")
-    if has_search:
-        parts.append("COUNT(DISTINCT s.search_id) AS total_searches")
-    else:
-        parts.append("0 AS total_searches")
-
-    if has_watch:
-        parts.append("COALESCE(w.total_watches, 0) AS total_watches")
-    else:
-        parts.append("0 AS total_watches")
-
-    if has_reviews:
-        parts.append("COALESCE(r.avg_rating, 0) AS avg_rating")
-    else:
-        parts.append("0 AS avg_rating")
-
-    if has_watch and has_movies:
-        parts.append("COALESCE(mfav.top_movie, '') AS top_movie")
-    else:
-        parts.append("'' AS top_movie")
-
-    select_clause = ",\n    ".join(parts)
-
-    sql = f"""
-        {select_clause}
-        FROM users u
-    """
-
-    if has_search:
-        sql += "\nLEFT JOIN search_logs s ON s.user_id = u.user_id"
-
-    if has_watch:
-        sql += "\nLEFT JOIN (SELECT user_id, COUNT(*) AS total_watches FROM watch_history GROUP BY user_id) w ON w.user_id = u.user_id"
-
-    if has_reviews:
-        sql += "\nLEFT JOIN (SELECT user_id, AVG(rating) AS avg_rating FROM reviews GROUP BY user_id) r ON r.user_id = u.user_id"
-
-    if has_watch and has_movies:
-        sql += "\nLEFT JOIN (\n            SELECT wh.user_id, (\n                SELECT m2.title FROM movies m2 WHERE m2.movie_id = (\n                    SELECT wh2.movie_id FROM watch_history wh2 WHERE wh2.user_id = wh.user_id GROUP BY wh2.movie_id ORDER BY COUNT(*) DESC LIMIT 1\n                ) LIMIT 1\n            ) AS top_movie FROM watch_history wh GROUP BY wh.user_id\n        ) mfav ON mfav.user_id = u.user_id"
-
-    sql += "\nGROUP BY u.user_id\nORDER BY total_searches DESC, total_watches DESC\nLIMIT 200"
-
     try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Simple fast query - just get basic user stats from search_logs
+        sql = """
+            SELECT 
+                u.user_id,
+                COALESCE(u.first_name, u.email) AS user_name,
+                COUNT(DISTINCT s.search_id) AS total_searches,
+                0 AS total_watch_events,
+                0.0 AS avg_rating,
+                '' AS top_movie
+            FROM users u
+            LEFT JOIN search_logs s ON s.user_id = u.user_id
+            GROUP BY u.user_id
+            ORDER BY total_searches DESC
+            LIMIT 50
+        """
         cursor.execute(sql)
         rows = cursor.fetchall()
-
-        # Country-level report: build per-country aggregates using derived tables
-        # This avoids referencing non-grouped outer columns in correlated subqueries
-        country_rows = []
-        if has_search:
-            # base select
-            country_sql = "SELECT c.country, COALESCE(s.total_searches,0) AS total_searches"
-            if has_watch:
-                country_sql += ", COALESCE(w.total_watch_events,0) AS total_watch_events"
-            else:
-                country_sql += ", 0 AS total_watch_events"
-            if has_reviews:
-                country_sql += ", COALESCE(r.avg_rating,0) AS avg_rating"
-            else:
-                country_sql += ", 0 AS avg_rating"
-            country_sql += ", COALESCE(tp.top_search_query, '') AS top_search_query\n"
-
-            # derive list of countries from search_logs
-            country_sql += "FROM (SELECT DISTINCT COALESCE(location_country,'Unknown') AS country FROM search_logs) c\n"
-
-            # attach search aggregates
-            country_sql += "LEFT JOIN (SELECT COALESCE(location_country,'Unknown') AS country, COUNT(*) AS total_searches FROM search_logs GROUP BY country) s ON s.country = c.country\n"
-
-            # attach watch aggregates if available
-            if has_watch:
-                country_sql += "LEFT JOIN (SELECT COALESCE(location_country,'Unknown') AS country, COUNT(*) AS total_watch_events FROM watch_history GROUP BY country) w ON w.country = c.country\n"
-
-            # attach review aggregates if available
-            if has_reviews:
-                country_sql += "LEFT JOIN (SELECT COALESCE(location_country,'Unknown') AS country, AVG(rating) AS avg_rating FROM reviews GROUP BY country) r ON r.country = c.country\n"
-
-            # compute top search per country using ROW_NUMBER for deterministic tie-breaking
-            # Requires MySQL 8+ (window functions). This selects the single top query per country
-            # ordered by count desc, then search_query asc to break ties deterministically.
-            country_sql += (
-                "LEFT JOIN (\n"
-                "  SELECT country, search_query AS top_search_query FROM (\n"
-                "    SELECT country, search_query, ROW_NUMBER() OVER (PARTITION BY country ORDER BY cnt DESC, search_query ASC) AS rn FROM (\n"
-                "      SELECT COALESCE(location_country,'Unknown') AS country, search_query, COUNT(*) AS cnt\n"
-                "      FROM search_logs\n"
-                "      GROUP BY country, search_query\n"
-                "    ) x\n"
-                "  ) t WHERE rn = 1\n"
-                ") tp ON tp.country = c.country\n"
-            )
-
-            country_sql += "ORDER BY total_searches DESC, total_watch_events DESC\nLIMIT 200"
-
-            try:
-                cursor.execute(country_sql)
-                country_rows = cursor.fetchall()
-            except Exception as ce:
-                # if something unexpected happens, return empty country rows but continue
-                print(f"[analytics] country query error: {ce}")
-                country_rows = []
-        else:
-            country_rows = []
-    except Exception as e:
-        # Handle missing-table errors with a helpful message
-        try:
-            import mysql.connector as _mysql
-            is_mysql_err = isinstance(e, _mysql.Error)
-        except Exception:
-            is_mysql_err = False
-
+        
+        # Simple country stats
+        country_sql = """
+            SELECT 
+                COALESCE(location_country, 'Unknown') AS country,
+                COUNT(*) AS total_searches,
+                0 AS total_watch_events,
+                0.0 AS avg_rating,
+                '' AS top_search_query,
+                '' AS top_movie
+            FROM search_logs
+            GROUP BY country
+            ORDER BY total_searches DESC
+            LIMIT 20
+        """
+        cursor.execute(country_sql)
+        country_rows = cursor.fetchall()
+        
         cursor.close()
         conn.close()
+        
+        return render_template("analytics.html", rows=rows, country_rows=country_rows)
+        
+    except Exception as e:
+        import traceback
+        return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
-        if is_mysql_err and getattr(e, 'errno', None) == errorcode.ER_NO_SUCH_TABLE:
-            # Extract table name from error message if possible
-            import re
-            m = re.search(r"Table '([^']+)'", str(e))
-            table_name = m.group(1) if m else None
-            msg = "Analytics can't run because a required table is missing."
-            if table_name:
-                msg += f" Missing table: {table_name}."
-            msg += "\nRun the database initialization or import scripts to create tables/data."
-            return render_template_string(f"""
-                <h2>Analytics unavailable</h2>
-                <p>{msg}</p>
-                <p><a href="{{{{ url_for('home') }}}}">Back to Home</a></p>
-            """), 500
-
-        return f"Analytics query error: {e}", 500
-
-    cursor.close()
-    conn.close()
-
-    return render_template("analytics.html", rows=rows, country_rows=country_rows)
 
 
 

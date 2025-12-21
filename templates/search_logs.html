@@ -59,7 +59,7 @@
         <input type="email" name="user_email" placeholder="or email@example.com"><br>
 
         <label>Or existing User ID (optional):</label><br>
-        <input type="number" name="user_id" placeholder="Existing user id (optional)"><br>
+        <input type="text" name="user_id" placeholder="Existing user id (optional)"><br>
 
         <label>Search Query:</label><br>
         <input type="text" name="search_query" required><br>
@@ -71,6 +71,22 @@
         <input type="number" name="clicked_result_position"><br>
 
         <button type="submit">Add Log</button>
+    </form>
+
+    <!-- Filter by user -->
+    <h3>Filter</h3>
+    <form method="GET" action="{{ url_for('search_logs') }}">
+        <label>Filter by user:</label>
+        <select name="user">
+            <option value="">-- All users --</option>
+            {% if users_list %}
+                {% for u in users_list %}
+                    <option value="{{ u.user_id }}" {% if user_filter and user_filter == u.user_id %}selected{% endif %}>{{ u.display }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <button type="submit">Filter</button>
+        <a href="{{ url_for('search_logs') }}" style="margin-left:8px;">Clear</a>
     </form>
 
     <!-- Logs Table -->
@@ -92,13 +108,15 @@
         <tr>
                         <!-- display name if available, else email, else user_id -->
                         <td>
-                            {% if row.user_name %}
-                                {{ row.user_name }}
-                            {% elif row.user_email %}
-                                {{ row.user_email }}
-                            {% else %}
-                                {{ row.user_id }}
+                            {% set display = row.user_name %}
+                            {% if not display or display == 'None' %}
+                                {% set display = row.user_email %}
                             {% endif %}
+                            {% if not display or display == 'None' %}
+                                {% set display = row.user_id %}
+                            {% endif %}
+                            {% set display = display or 'Guest' %}
+                            {{ display }}
                         </td>
             <td>{{ row.search_query }}</td>
             <td>{{ row.search_date }}</td>

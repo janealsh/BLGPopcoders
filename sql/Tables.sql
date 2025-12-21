@@ -2,7 +2,6 @@
 CREATE DATABASE IF NOT EXISTS netflix2025;
 USE netflix2025;
 
--- Table for users
 CREATE TABLE users (
     user_id VARCHAR(50) PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
@@ -11,16 +10,16 @@ CREATE TABLE users (
     subscription_plan VARCHAR(50),
     is_active BOOLEAN NOT NULL
 );  
+CREATE INDEX idx_users_email ON users(email);
 
--- Table for movies
 CREATE TABLE movies (
     movie_id VARCHAR(50) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content_type VARCHAR(50) NOT NULL,
     rating VARCHAR(20)
 );
+CREATE INDEX idx_movies_title ON movies(title);
 
--- Table for user search activity
 CREATE TABLE search_logs (
     search_id BIGINT ,
     user_id VARCHAR(50) NOT NULL,
@@ -31,8 +30,8 @@ CREATE TABLE search_logs (
 
     PRIMARY KEY (search_id)
 );
+CREATE INDEX idx_search_logs_user_id ON search_logs(user_id);
 ALTER TABLE search_log
-ADD COLUMN results_count INT NOT NULL DEFAULT 0,
 ADD COLUMN search_time_ms INT NOT NULL DEFAULT 0;
 
 
@@ -44,8 +43,9 @@ CREATE TABLE recommendation_logs (
     movie_id VARCHAR(50) NOT NULL,
     score DECIMAL(5,3),
     clicked BOOLEAN NOT NULL,
+CREATE INDEX idx_recommendation_logs_user_id ON recommendation_logs(user_id);
+CREATE INDEX idx_recommendation_logs_movie_id ON recommendation_logs(movie_id);
     position INT,
-    device VARCHAR(50),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE,
 );
@@ -58,8 +58,9 @@ CREATE TABLE reviews (
     movie_id VARCHAR(50) NOT NULL,
     rating INT NOT NULL,
     review_date DATE NOT NULL,
+CREATE INDEX idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX idx_reviews_movie_id ON reviews(movie_id);
     device_type VARCHAR(10),
-    is_verified BIT,
     total_votes INT,
 
     PRIMARY KEY (review_id)
@@ -78,6 +79,8 @@ CREATE TABLE search_history (
 
     PRIMARY KEY (session_id),
     FOREIGN KEY (user_id)
+CREATE INDEX idx_search_history_user_id ON search_history(user_id);
+CREATE INDEX idx_search_history_movie_id ON search_history(movie_id);
         REFERENCES users
         ON DELETE CASCADE,
     FOREIGN KEY (movie_id)

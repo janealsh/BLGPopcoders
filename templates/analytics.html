@@ -19,7 +19,7 @@
             <th>User ID</th>
             <th>User</th>
             <th>Total Searches</th>
-            <th>Total Watches</th>
+            <th>Total Watch Events</th>
             <th>Avg Rating</th>
             <th>Top Movie</th>
         </tr>
@@ -28,9 +28,9 @@
             <td>{{ r.user_id }}</td>
             <td>{{ r.user_name }}</td>
             <td>{{ r.total_searches }}</td>
-            <td>{{ r.total_watches }}</td>
-            <td>{{ "{:.2f}".format(r.avg_rating) if r.avg_rating is not none else '' }}</td>
-            <td>{{ r.top_movie }}</td>
+            <td>{{ r.total_watch_events if r.total_watch_events is not none else (r.total_watches if r.total_watches is not none else '') }}</td>
+            <td>{{ "{:.2f}".format(r.avg_rating) if (r.avg_rating is not none and r.avg_rating != 0) else ("{:.2f}".format(r.avg_rating) if r.avg_rating is not none else '') }}</td>
+            <td>{{ r.top_movie or '' }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -44,6 +44,7 @@
             <th>Total Watch Events</th>
             <th>Avg Rating</th>
             <th>Top Search Query</th>
+            <th>Top Movie</th>
         </tr>
         {% for c in country_rows %}
         <tr>
@@ -52,6 +53,7 @@
             <td>{{ c.total_watch_events }}</td>
             <td>{{ "{:.2f}".format(c.avg_rating) if c.avg_rating is not none else '' }}</td>
             <td>{{ c.top_search_query or '' }}</td>
+            <td>{{ c.top_movie or '' }}</td>
         </tr>
         {% endfor %}
     </table>

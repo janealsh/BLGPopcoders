@@ -128,7 +128,7 @@ def test_edit_update_delete(monkeypatch):
     row = cur.fetchone()
     assert row is not None
     search_id = row[0]
-
+ 
     rv = client.get(f'/search-logs/edit/{search_id}')
     assert rv.status_code == 200
     assert b'to-edit' in rv.data
