@@ -62,7 +62,6 @@ def movies():
 
 
 def movie_detail():
-    """Show individual movie details"""
     movie_id = request.args.get('movie_id')
     
     if not movie_id:
@@ -1068,7 +1067,6 @@ def click_recommendation():
     db = get_db()
     cursor = db.cursor(dictionary=True)
 
-    """Mark a recommendation as clicked"""
     recommendation_id = request.form.get('recommendation_id')
     movie_id = request.form.get('movie_id')
     
@@ -1076,7 +1074,6 @@ def click_recommendation():
         return "Recommendation ID required", 400
     
     try:
-        # is_clicked'i 1 yap
         cursor.execute("""
             UPDATE recommendation_logs 
             SET clicked = 1 
@@ -1084,7 +1081,6 @@ def click_recommendation():
         """, (recommendation_id,))
         db.commit()
         
-        # Film detay sayfasına yönlendir
         return redirect(f"/movie?movie_id={movie_id}")
     except Exception as e:
         print(f"Error updating recommendation: {e}")
@@ -1094,7 +1090,6 @@ def remove_recommendation():
     db = get_db()
     cursor = db.cursor(dictionary=True)
 
-    """Remove a recommendation from database"""
     recommendation_id = request.form.get('recommendation_id')
     user_id = request.form.get('user_id')
     
@@ -1102,7 +1097,6 @@ def remove_recommendation():
         return "Recommendation ID required", 400
     
     try:
-        # Recommendation log'u sil
         cursor.execute("""
             DELETE FROM recommendation_logs 
             WHERE recommendation_id = %s
@@ -1111,14 +1105,12 @@ def remove_recommendation():
         
         print(f"Deleted recommendation: {recommendation_id}")
         
-        # Aynı kullanıcının sayfasına geri dön
         return redirect(f"/recommend?user_id={user_id}")
     except Exception as e:
         print(f"Error removing recommendation: {e}")
         return f"Error: {e}", 500
     
 def add_new_recommendation():
-    """Generate and add a new recommendation for a user"""
     if request.method != 'POST':
         return redirect(url_for('recommend'))
     
@@ -1131,7 +1123,6 @@ def add_new_recommendation():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         
-        # 1. Get movies that the user hasn't been recommended yet
         cursor.execute("""
             SELECT m.movie_id, m.title 
             FROM movies m
@@ -1147,7 +1138,6 @@ def add_new_recommendation():
         movie = cursor.fetchone()
         
         if not movie:
-            # If all movies have been recommended, just pick a random movie
             cursor.execute("""
                 SELECT movie_id, title 
                 FROM movies 
@@ -1168,10 +1158,8 @@ def add_new_recommendation():
         max_id = max_result['max_id'] if max_result and max_result['max_id'] else 0
         recommendation_id = f"rec_{str(max_id + 1).zfill(6)}"
         
-        # 3. Generate a random score between 0.5 and 1.0
         score = round(random.uniform(0.5, 1.0), 3)
         
-        # 4. Get the next position (max position + 1)
         cursor.execute("""
             SELECT COALESCE(MAX(position), 0) + 1 as next_position
             FROM recommendation_logs
@@ -1180,7 +1168,6 @@ def add_new_recommendation():
         position_result = cursor.fetchone()
         position = position_result['next_position'] if position_result else 1
         
-        # 5. Insert the new recommendation
         cursor.execute("""
             INSERT INTO recommendation_logs 
             (recommendation_id, user_id, movie_id, score, clicked, position)
@@ -1191,7 +1178,6 @@ def add_new_recommendation():
         cursor.close()
         db.close()
         
-        # Redirect back to recommend page with success message
         return redirect(f"/recommend?user_id={user_id}&success=1&movie_title={movie['title']}")
         
     except Exception as e:
