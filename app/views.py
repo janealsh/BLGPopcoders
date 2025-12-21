@@ -212,29 +212,8 @@ def delete_watch_history():
         return jsonify(success=False, error=str(e)), 500
     
 
-# def update_watch_history():
-#     session_id = request.form.get('session_id')
-#     rating = request.form.get('rating')
-
-#     if not session_id:
-#         return "Missing session_id", 400
-
-#     sql = """
-#     UPDATE watch_history
-#     SET rating=%s
-#     WHERE session_id=%s
-#     """
-#     values = (rating, session_id)
-#     try:
-#         cursor.execute(sql, values)
-#         db.commit()
-#     except mysql.connector.Error as e:
-#         return f"Database error: {e}", 500
-
-#     return redirect("/watch_history")
-    
-# ...existing code...
 def edit_watch_history(session_id):
+    # this endpoint is used to access the form to update the specific watch history row
     try:
         cursor.execute(
             """
@@ -254,7 +233,7 @@ def edit_watch_history(session_id):
                 <a href="{{{{ url_for('watch_history') }}}}">Back</a>
             """), 404
 
-        # row is a tuple in the same order as the SELECT above
+        # row is in the same order as the SELECT in the query above
         return render_template("edit_watch_history.html", entry=row)
     except Exception as e:
         print("edit_watch_history error:", e, flush=True)
@@ -270,7 +249,7 @@ def update_watch_history():
     if not session_id:
         return "Missing session_id", 400
 
-    # collect fields (simple: allow blank and pass through)
+    # collect fields (allow blank fields)
     user_id = request.form.get("user_id") or None
     movie_id = request.form.get("movie_id") or None
     watch_date = request.form.get("watch_date") or None
@@ -311,11 +290,10 @@ def update_watch_history():
             <a href="{{{{ url_for('watch_history') }}}}">Back</a>
         """), 500
 
-    # redirect back to watch_history (optionally filtered by user)
+    # redirect back to watch_history based on the user_id of the row that was being edited
     if user_id:
         return redirect(f"/watch_history?user_id={user_id}")
     return redirect("/watch_history")
-# ...existing code...
 
 def recommend():
     rec_logs = RecommendationLogs(db)
