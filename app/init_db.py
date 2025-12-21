@@ -162,7 +162,6 @@ def create_database_and_tables(config=DB_CONFIG):
                 print(f"Failed creating table {name}: {err}")
                 raise
 
-        # recommendation_logs tablosunda movie_id ve user_id öneklerini kaldır
         try:
             cursor.execute("UPDATE recommendation_logs SET movie_id = REPLACE(movie_id, 'movie_', ''), user_id = REPLACE(user_id, 'user_', '')")
             print("recommendation_logs tablosunda önekler temizlendi.")

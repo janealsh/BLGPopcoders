@@ -320,13 +320,12 @@ def import_watch_history_table():
     cursor = conn.cursor()
     csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/watch_history.csv')
 
-    # watch_history CSV columns: session_id,user_id,movie_id,watch_date,watch_duration_minutes,progress_percentage,location_country,rating
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            next(file)  # skip header
+            next(file)  
             for line in file:
                 fields = line.strip().split(',')
-                if len(fields) < 4:  # minimum fields required
+                if len(fields) < 4:  
                     continue
 
                 session_id = fields[0].strip() if len(fields) > 0 else None
@@ -338,7 +337,6 @@ def import_watch_history_table():
                 location_country = fields[6].strip() if len(fields) > 6 else None
                 user_rating = int(fields[7]) if len(fields) > 7 and fields[7].strip() else None
 
-                # map user_csv_id and movie_csv_id to canonical IDs
                 mapped_user_id = None
                 mapped_movie_id = None
 
@@ -390,13 +388,11 @@ def import_recommendation_logs_table():
     cursor = conn.cursor()
     csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/recommendation_logs.csv')
 
-    # recommendation_logs CSV columns: rec_id,user_id,movie_id,score,clicked,rank,device_type
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            # No header row in recommendation_logs.csv - start from first line
             for line in file:
                 fields = line.strip().split(',')
-                if len(fields) < 3:  # minimum fields required
+                if len(fields) < 3: 
                     continue
 
                 rec_id = extract_int_id(fields[0]) if len(fields) > 0 else None
