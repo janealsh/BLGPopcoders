@@ -26,9 +26,9 @@ def movies():
         query = """
             SELECT m.movie_id, m.title, m.content_type, m.rating, COUNT(wh.session_id) as watch_count
             FROM movies m
-            INNER JOIN watch_history wh ON m.movie_id = wh.movie_id
+            LEFT JOIN watch_history wh ON m.movie_id = wh.movie_id
             GROUP BY m.movie_id, m.title, m.content_type, m.rating
-            ORDER BY watch_count DESC
+            ORDER BY watch_count DESC, m.movie_id
             LIMIT 20
         """
         conn = get_db()

@@ -207,6 +207,7 @@
             </div>
             <nav>
                 <ul>
+                    <li><a href="{{ url_for('movies') }}">Movies</a></li>
                     <li><a href="{{ url_for('watch_history') }}">Watch History</a></li>
                     <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
                     <li><a href="{{ url_for('recommend') }}">Recommend</a></li>
@@ -225,6 +226,12 @@
         </section>
 
         <section class="grid">
+            <div class="card">
+                <h3>🎬 Popular Movies</h3>
+                <p>Browse the top 20 most popular movies on our platform.</p>
+                <a href="{{ url_for('movies') }}">View Movies</a>
+            </div>
+
             <div class="card">
                 <h3>📺 Watch History</h3>
                 <p>See all movies you've watched and when you watched them.</p>
