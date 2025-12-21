@@ -108,7 +108,8 @@ CREATE_TABLES_SQL = [
             watch_duration_minutes DOUBLE,
             progress_percentage DOUBLE,
             location_country VARCHAR(100),
-            rating TINYINT,
+            user_rating INT,
+
             PRIMARY KEY (session_id),
             INDEX (user_id),
             INDEX (movie_id),
