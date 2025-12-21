@@ -234,7 +234,7 @@ def import_reviews_table():
                 total_votes = int(float(fields[7])) if fields[7] not in ("", None) else 0
 
                 insert_query = """
-                    INSERT IGNORE INTO reviews (review_id, user_id, movie_id, rating, review_date, device_type, is_verified_watch, total_votes)
+                    REPLACE INTO reviews (review_id, user_id, movie_id, rating, review_date, device_type, is_verified_watch, total_votes)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (review_csv_id, mapped_user_id, mapped_movie_id, rating, review_date, device_type, is_verified_watch, total_votes))
@@ -291,7 +291,7 @@ def import_search_logs_table():
                             mapped_user_id = r2[0]
 
                 insert_query = """
-                    INSERT IGNORE INTO search_logs (search_id, user_id, search_query, search_date, clicked_result_position, location_country)
+                    REPLACE INTO search_logs (search_id, user_id, search_query, search_date, clicked_result_position, location_country)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (search_csv_id, mapped_user_id, search_query, search_date, clicked_pos, location_country))
@@ -356,7 +356,7 @@ def import_watch_history_table():
                             mapped_movie_id = r2[0]
 
                 insert_query = """
-                    INSERT IGNORE INTO watch_history (session_id, user_id, movie_id, watch_date, watch_duration_minutes, progress_percentage, location_country, user_rating)
+                    REPLACE INTO watch_history (session_id, user_id, movie_id, watch_date, watch_duration_minutes, progress_percentage, location_country, user_rating)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (session_id, mapped_user_id, mapped_movie_id, watch_date, watch_duration, progress_pct, location_country, user_rating))
@@ -424,7 +424,7 @@ def import_recommendation_logs_table():
                             mapped_movie_id = r2[0]
 
                 insert_query = """
-                    INSERT IGNORE INTO recommendation_logs (recommendation_id, user_id, movie_id, score, clicked, position, device)
+                    REPLACE INTO recommendation_logs (recommendation_id, user_id, movie_id, score, clicked, position, device)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (rec_id, mapped_user_id, mapped_movie_id, score, is_clicked, rank, device_type))
