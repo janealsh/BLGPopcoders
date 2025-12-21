@@ -445,6 +445,23 @@ def import_recommendation_logs_table():
         cursor.close()
         conn.close()
 
+def drop_mapping_tables():
+    conn = connect_to_db()
+    if conn is None:
+        return
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DROP TABLE IF EXISTS import_user_map")
+        cursor.execute("DROP TABLE IF EXISTS import_movie_map")
+        conn.commit()
+        print("Mapping tables dropped successfully.")
+    except mysql.connector.Error as err:
+        print(f"Error dropping mapping tables: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def main():
     import_users_table()
@@ -458,7 +475,7 @@ def main():
     import_watch_history_table()
     input("Press Enter to continue to import recommendation_logs...")
     import_recommendation_logs_table()
-
+    drop_mapping_tables()
 if __name__ == "__main__":
     main()
     
