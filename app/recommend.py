@@ -110,7 +110,7 @@ class RecommendationLogs:
                 column_type = column[1]
                 try:
                     if 'get_mysql_data_types' in globals():
-                        mysql_data_type = get_mysql_data_types(column_type)
+                      mysql_data_type = get_mysql_data_types(column_type)
                     else:
                         mysql_data_type = str(column_type)
                 except:
