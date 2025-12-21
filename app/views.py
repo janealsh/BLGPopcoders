@@ -967,35 +967,63 @@ def analytics():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Simple fast query - just get basic user stats from search_logs
+        # Query with actual watch and rating calculations - show users with watch history
         sql = """
             SELECT 
-                u.user_id,
-                COALESCE(u.first_name, u.email) AS user_name,
+                w.user_id,
+                w.user_id AS user_name,
                 COUNT(DISTINCT s.search_id) AS total_searches,
-                0 AS total_watch_events,
-                0.0 AS avg_rating,
-                '' AS top_movie
-            FROM users u
-            LEFT JOIN search_logs s ON s.user_id = u.user_id
-            GROUP BY u.user_id
-            ORDER BY total_searches DESC
+                COUNT(DISTINCT w.session_id) AS total_watch_events,
+                COALESCE(AVG(r.rating), 0.0) AS avg_rating,
+                (SELECT m.title 
+                 FROM watch_history w2 
+                 JOIN movies m ON w2.movie_id = m.movie_id
+                 WHERE w2.user_id = w.user_id 
+                 GROUP BY m.movie_id 
+                 ORDER BY COUNT(*) DESC 
+                 LIMIT 1) AS top_movie
+            FROM watch_history w
+            LEFT JOIN search_logs s ON w.user_id = s.user_id
+            LEFT JOIN reviews r ON CONCAT('user_', w.user_id) = r.user_id
+            GROUP BY w.user_id
+            ORDER BY total_watch_events DESC
             LIMIT 50
         """
         cursor.execute(sql)
         rows = cursor.fetchall()
         
-        # Simple country stats
+        # Country stats with nested subqueries - using derived table to avoid GROUP BY issues
         country_sql = """
             SELECT 
-                COALESCE(location_country, 'Unknown') AS country,
-                COUNT(*) AS total_searches,
-                0 AS total_watch_events,
+                country,
+                total_searches,
+                (SELECT COUNT(*)
+                 FROM watch_history w
+                 WHERE COALESCE(w.location_country, 'Unknown') = country
+                ) AS total_watch_events,
                 0.0 AS avg_rating,
-                '' AS top_search_query,
-                '' AS top_movie
-            FROM search_logs
-            GROUP BY country
+                (SELECT search_query 
+                 FROM search_logs s2
+                 WHERE COALESCE(s2.location_country, 'Unknown') = country
+                 GROUP BY search_query
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 1
+                ) AS top_search_query,
+                (SELECT m.title
+                 FROM watch_history w2
+                 JOIN movies m ON w2.movie_id = m.movie_id
+                 WHERE COALESCE(w2.location_country, 'Unknown') = country
+                 GROUP BY m.movie_id
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 1
+                ) AS top_movie
+            FROM (
+                SELECT 
+                    COALESCE(location_country, 'Unknown') AS country,
+                    COUNT(*) AS total_searches
+                FROM search_logs
+                GROUP BY COALESCE(location_country, 'Unknown')
+            ) AS country_searches
             ORDER BY total_searches DESC
             LIMIT 20
         """

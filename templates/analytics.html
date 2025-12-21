@@ -1,63 +1,192 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Analytics - Popcoders</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 8px; }
-        th { background:#efefef; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1a202c;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+        
+        p {
+            color: #4a5568;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            padding: 16px 12px;
+            text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+        
+        tr:hover {
+            background-color: #f7fafc;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            table {
+                font-size: 0.85rem;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Analytics — User Summary</h1>
-    <p>Demonstrates nested subqueries, GROUP BY, and joins across multiple tables.</p>
+    <div class="container">
+        <h1>Analytics — User Summary</h1>
+        <p>Demonstrates nested subqueries, GROUP BY, and joins across multiple tables.</p>
 
-    <table>
-        <tr>
-            <th>User ID</th>
-            <th>User</th>
-            <th>Total Searches</th>
-            <th>Total Watch Events</th>
-            <th>Avg Rating</th>
-            <th>Top Movie</th>
-        </tr>
-        {% for r in rows %}
-        <tr>
-            <td>{{ r.user_id }}</td>
-            <td>{{ r.user_name }}</td>
-            <td>{{ r.total_searches }}</td>
-            <td>{{ r.total_watch_events if r.total_watch_events is not none else (r.total_watches if r.total_watches is not none else '') }}</td>
-            <td>{{ "{:.2f}".format(r.avg_rating) if (r.avg_rating is not none and r.avg_rating != 0) else ("{:.2f}".format(r.avg_rating) if r.avg_rating is not none else '') }}</td>
-            <td>{{ r.top_movie or '' }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>User</th>
+                    <th>Total Searches</th>
+                    <th>Total Watch Events</th>
+                    <th>Avg Rating</th>
+                    <th>Top Movie</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td>{{ r.user_id }}</td>
+                    <td>{{ r.user_name }}</td>
+                    <td>{{ r.total_searches }}</td>
+                    <td>{{ r.total_watch_events if r.total_watch_events is not none else (r.total_watches if r.total_watches is not none else '') }}</td>
+                    <td>{{ "{:.2f}".format(r.avg_rating) if (r.avg_rating is not none and r.avg_rating != 0) else ("{:.2f}".format(r.avg_rating) if r.avg_rating is not none else '') }}</td>
+                    <td>{{ r.top_movie or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <h2 style="margin-top:24px">Country Summary (GROUP BY location)</h2>
-    <p>Shows aggregated metrics per country using outer joins and a nested subquery to find top search query per country.</p>
-    <table>
-        <tr>
-            <th>Country</th>
-            <th>Total Searches</th>
-            <th>Total Watch Events</th>
-            <th>Avg Rating</th>
-            <th>Top Search Query</th>
-            <th>Top Movie</th>
-        </tr>
-        {% for c in country_rows %}
-        <tr>
-            <td>{{ c.country }}</td>
-            <td>{{ c.total_searches }}</td>
-            <td>{{ c.total_watch_events }}</td>
-            <td>{{ "{:.2f}".format(c.avg_rating) if c.avg_rating is not none else '' }}</td>
-            <td>{{ c.top_search_query or '' }}</td>
-            <td>{{ c.top_movie or '' }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <h2>Country Summary (GROUP BY location)</h2>
+        <p>Shows aggregated metrics per country using outer joins and a nested subquery to find top search query per country.</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Total Searches</th>
+                    <th>Total Watch Events</th>
+                    <th>Avg Rating</th>
+                    <th>Top Search Query</th>
+                    <th>Top Movie</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in country_rows %}
+                <tr>
+                    <td>{{ c.country }}</td>
+                    <td>{{ c.total_searches }}</td>
+                    <td>{{ c.total_watch_events }}</td>
+                    <td>{{ "{:.2f}".format(c.avg_rating) if c.avg_rating is not none else '' }}</td>
+                    <td>{{ c.top_search_query or '' }}</td>
+                    <td>{{ c.top_movie or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <p><a href="{{ url_for('search_logs') }}">Back to Search Logs</a></p>
+        <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+    </div>
 </body>
 </html>
