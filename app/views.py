@@ -19,7 +19,7 @@ from movies import Movies
 db = mysql.connector.connect(
     host= 'localhost',
     user='root',
-    password='PopC.2025',
+    password='Popcoder2025',
     database='netflix2025'
 )
 
