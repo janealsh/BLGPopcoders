@@ -207,9 +207,115 @@ def delete_watch_history():
         query = "DELETE FROM watch_history WHERE session_id = %s"
         cursor.execute(query, (wh_id,))
         db.commit()
-        return jsonify(success=True, id=wh_id)
+        return redirect("/watch_history")
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
+    
+
+# def update_watch_history():
+#     session_id = request.form.get('session_id')
+#     rating = request.form.get('rating')
+
+#     if not session_id:
+#         return "Missing session_id", 400
+
+#     sql = """
+#     UPDATE watch_history
+#     SET rating=%s
+#     WHERE session_id=%s
+#     """
+#     values = (rating, session_id)
+#     try:
+#         cursor.execute(sql, values)
+#         db.commit()
+#     except mysql.connector.Error as e:
+#         return f"Database error: {e}", 500
+
+#     return redirect("/watch_history")
+    
+# ...existing code...
+def edit_watch_history(session_id):
+    try:
+        cursor.execute(
+            """
+            SELECT session_id, user_id, movie_id, watch_date,
+                   watch_duration_minutes, progress_percentage,
+                   location_country, user_rating
+            FROM watch_history
+            WHERE session_id = %s
+            """,
+            (session_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return render_template_string(f"""
+                <h2>Not found</h2>
+                <p>No watch history entry with id: {session_id}</p>
+                <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+            """), 404
+
+        # row is a tuple in the same order as the SELECT above
+        return render_template("edit_watch_history.html", entry=row)
+    except Exception as e:
+        print("edit_watch_history error:", e, flush=True)
+        return render_template_string(f"""
+            <h2>Error loading edit form</h2>
+            <p>Error: {e}</p>
+            <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+        """), 500
+
+
+def update_watch_history():
+    session_id = request.form.get("session_id")
+    if not session_id:
+        return "Missing session_id", 400
+
+    # collect fields (simple: allow blank and pass through)
+    user_id = request.form.get("user_id") or None
+    movie_id = request.form.get("movie_id") or None
+    watch_date = request.form.get("watch_date") or None
+    watch_duration_minutes = request.form.get("watch_duration_minutes") or None
+    progress_percentage = request.form.get("progress_percentage") or None
+    location_country = request.form.get("location_country") or None
+    user_rating = request.form.get("user_rating") or None
+
+    try:
+        sql = """
+        UPDATE watch_history
+        SET user_id=%s,
+            movie_id=%s,
+            watch_date=%s,
+            watch_duration_minutes=%s,
+            progress_percentage=%s,
+            location_country=%s,
+            user_rating=%s
+        WHERE session_id=%s
+        """
+        values = (
+            user_id,
+            movie_id,
+            watch_date,
+            watch_duration_minutes,
+            progress_percentage,
+            location_country,
+            user_rating,
+            session_id,
+        )
+        cursor.execute(sql, values)
+        db.commit()
+    except Exception as e:
+        print("update_watch_history error:", e, flush=True)
+        return render_template_string(f"""
+            <h2>Error updating entry</h2>
+            <p>{e}</p>
+            <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+        """), 500
+
+    # redirect back to watch_history (optionally filtered by user)
+    if user_id:
+        return redirect(f"/watch_history?user_id={user_id}")
+    return redirect("/watch_history")
+# ...existing code...
 
 def recommend():
     rec_logs = RecommendationLogs(db)

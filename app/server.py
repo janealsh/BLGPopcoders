@@ -13,8 +13,13 @@ def create_app():
     app.add_url_rule("/", view_func=views.home)
     app.add_url_rule("/movies", view_func=views.movies)
     app.add_url_rule("/reviews", view_func=views.reviews)
+    
+    # watch_history endpoints
     app.add_url_rule("/watch_history", view_func=views.watch_history)
     app.add_url_rule("/delete_watch_history", view_func=views.delete_watch_history, methods=["POST"])
+    app.add_url_rule("/edit_watch_history/<session_id>", view_func=views.edit_watch_history, methods=["GET"])
+    app.add_url_rule("/update_watch_history", view_func=views.update_watch_history, methods=["POST"])
+    
     app.add_url_rule("/recommend", view_func=views.recommend)
 
     app.add_url_rule("/add_review", view_func=views.add_review, methods=["POST"])
