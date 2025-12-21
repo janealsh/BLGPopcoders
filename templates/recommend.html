@@ -133,17 +133,34 @@
     </div>
 
     {% if recommendations %}
-    <h2>Your Recommended Movies</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Your Recommended Movies</h2>
+        <form method="POST" action="/add-new-recommendation" style="margin: 0;">
+            <input type="hidden" name="user_id" value="{{ user_id }}">
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 20px;">
+                Recommend Me
+            </button>
+        </form>
+    </div>
     <ul class="movie-list">
         {% for title in movie_titles %}
         <li class="movie-item">
-            <form method="POST" action="/click-recommendation" style="margin: 0;">
-                <input type="hidden" name="recommendation_id" value="{{ recommendations[loop.index0].recommendation_id }}">
-                <input type="hidden" name="movie_id" value="{{ recommendations[loop.index0].movie_id }}">
-                <button type="submit" style="background: none; border: none; padding: 0; text-align: left; width: 100%; cursor: pointer;">
-                    <div class="movie-title" style="color: #007bff;">{{ loop.index }}. {{ title }}</div>
-                </button>
-            </form>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <form method="POST" action="/click-recommendation" style="margin: 0; flex: 1;">
+                    <input type="hidden" name="recommendation_id" value="{{ recommendations[loop.index0].recommendation_id }}">
+                    <input type="hidden" name="movie_id" value="{{ recommendations[loop.index0].movie_id }}">
+                    <button type="submit" style="background: none; border: none; padding: 0; text-align: left; width: 100%; cursor: pointer;">
+                        <div class="movie-title" style="color: #007bff;">{{ loop.index }}. {{ title }}</div>
+                    </button>
+                </form>
+                <form method="POST" action="/remove-recommendation" style="margin: 0; margin-left: 15px;">
+                    <input type="hidden" name="recommendation_id" value="{{ recommendations[loop.index0].recommendation_id }}">
+                    <input type="hidden" name="user_id" value="{{ user_id }}">
+                    <button type="submit" class="btn-danger" style="padding: 6px 12px; font-size: 14px;" onclick="return confirm('Are you sure you want to remove this recommendation?')">
+                        🚫 Don't Recommend
+                    </button>
+                </form>
+            </div>
         </li>
         {% endfor %}
     </ul>

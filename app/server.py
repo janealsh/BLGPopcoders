@@ -16,32 +16,48 @@ def create_app():
     app.secret_key = "your-secret-key-change-in-production"
 
     # Import views here to avoid circular imports during module import
+    # Make imports resilient when running as `python app/server.py` or `python -m app.server`.
+    import sys
+    import importlib
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
     try:
-        from . import views
+        views = importlib.import_module("app.views")
     except Exception:
-        from app import views
+        try:
+            views = importlib.import_module("views")
+        except Exception:
+            from . import views
 
     # Main pages
     app.add_url_rule("/", view_func=views.home)
     app.add_url_rule("/movies", view_func=views.movies)
     app.add_url_rule("/movie", view_func=views.movie_detail)
     app.add_url_rule("/reviews", view_func=views.reviews)
-    app.add_url_rule("/watch_history", view_func=views.watch_history)
-    app.add_url_rule("/recommend", view_func=views.recommend)
     
+    # watch_history endpoints
+    app.add_url_rule("/watch_history", view_func=views.watch_history)
+    app.add_url_rule("/delete_watch_history", view_func=views.delete_watch_history, methods=["POST"])
+    app.add_url_rule("/edit_watch_history/<session_id>", view_func=views.edit_watch_history, methods=["GET"])
+    app.add_url_rule("/update_watch_history", view_func=views.update_watch_history, methods=["POST"])
+    
+    app.add_url_rule("/recommend", view_func=views.recommend, methods=["GET", "POST"])
+
     # Reviews (from main)
     
     app.add_url_rule("/add_review_form", view_func=views.add_review_form)
-    app.add_url_rule("/recommend", view_func=views.recommend, methods=["GET", "POST"])
     
     app.add_url_rule("/add_review", view_func=views.add_review, methods=["POST"])
     app.add_url_rule("/update_review", view_func=views.update_review, methods=["POST"])
     app.add_url_rule("/delete_review", view_func=views.delete_review, methods=["POST"])
+    
+    # Recommendations CRUD
 
-    app.add_url_rule('/save-feedback', view_func=views.save_feedback, methods=['POST'])
     app.add_url_rule("/click-recommendation", view_func=views.click_recommendation, methods=["POST"])
-
-
+    app.add_url_rule('/remove-recommendation', view_func=views.remove_recommendation, methods=['POST'])
+    app.add_url_rule("/add-new-recommendation", view_func=views.add_new_recommendation, methods=["POST"])
+    
     # Search logs
     app.add_url_rule("/search-logs", view_func=views.search_logs)
     app.add_url_rule("/search-logs/add", view_func=views.add_search_log, methods=["POST"])

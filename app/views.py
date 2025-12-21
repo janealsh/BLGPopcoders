@@ -1,5 +1,5 @@
 try:
-    from flask import render_template, request, redirect, url_for, render_template_string, flash
+    from flask import render_template, request, redirect, url_for, render_template_string, flash, jsonify
 except ImportError as e:
     raise RuntimeError("Missing dependency 'Flask'. Install with: python -m pip install Flask") from e
 
@@ -8,42 +8,34 @@ try:
 except ImportError as e:
     raise RuntimeError("Missing dependency 'mysql-connector-python'. Install with: python -m pip install mysql-connector-python") from e
 
+import random
 from .database import get_db
 from mysql.connector import errorcode
-from datetime import date
+from datetime import datetime, date
 import os
-from recommend import RecommendationLogs
-from movies import Movies
+from .recommend import RecommendationLogs
+from .movies import Movies
 
-# Database connection
-db = mysql.connector.connect(
-    host= 'localhost',
-    user='root',
-    password='Popcoder2025',
-    database='netflix2025'
-)
-
-cursor = db.cursor()
-
+# Do NOT open a DB connection at import time; use `get_db()` inside request handlers
 
 def home():
     return render_template("home.html")
 
 def movies():
     try:
-        # Watch history'den en çok izlenen 20 filmi getir
         query = """
             SELECT m.movie_id, m.title, m.content_type, m.rating, COUNT(wh.session_id) as watch_count
             FROM movies m
-            INNER JOIN watch_history wh ON m.movie_id = wh.movie_id
+            LEFT JOIN watch_history wh ON m.movie_id = wh.movie_id
             GROUP BY m.movie_id, m.title, m.content_type, m.rating
-            ORDER BY watch_count DESC
+            ORDER BY watch_count DESC, m.movie_id
             LIMIT 20
         """
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute(query)
         movies_list = cursor.fetchall()
         
-        # Tuple'ları dictionary'ye çevir
         movies_data = []
         for movie in movies_list:
             movies_data.append({
@@ -58,24 +50,32 @@ def movies():
     except Exception as e:
         print(f"Error fetching movies: {e}")
         return render_template("movies.html", movies=[], error=str(e))
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def movie_detail():
-    """Show individual movie details"""
     movie_id = request.args.get('movie_id')
     
     if not movie_id:
         return "Movie ID required", 400
     
     try:
-        # Film bilgilerini al
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (movie_id,))
         movie = cursor.fetchone()
         
         if not movie:
             return "Movie not found", 404
         
-        # Movie tuple'ını dictionary'ye çevir
         movie_data = {
             'movie_id': movie[0],
             'title': movie[1],
@@ -83,11 +83,10 @@ def movie_detail():
             'release_year': movie[3] if len(movie) > 3 else None
         }
         
-        # Bu filme ait yorumları al
         cursor.execute("""
             SELECT * FROM reviews 
             WHERE movie_id = %s 
-            ORDER BY review_date DESC 
+            ORDER BY review_id ASC 
             LIMIT 10
         """, (movie_id,))
         reviews = cursor.fetchall()
@@ -96,6 +95,15 @@ def movie_detail():
     except Exception as e:
         print(f"Error fetching movie detail: {e}")
         return f"Error: {e}", 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 
@@ -141,7 +149,7 @@ def reviews():
             FROM reviews
             LEFT JOIN movies ON reviews.movie_id = movies.movie_id
             {where_sql}
-            ORDER BY review_date DESC
+            ORDER BY review_id ASC
             LIMIT %s OFFSET %s
         """
         exec_params = params + [per_page, offset]
@@ -279,32 +287,181 @@ def delete_review():
     return redirect(f"/reviews?movie_id={movie_id}")
 
 
-
 def watch_history():
-    # db = current_app.config["db"]
-    # watch_history = db.watch_history()
-    # return render_template("watch_history.html", watch_history = watch_history)
-
     conn = get_db()
     cursor = conn.cursor()
+    user_filter = request.args.get("user_name") or None
+
     try:
-        query = """SELECT * FROM watch_history
-            ORDER BY watch_date DESC
-            LIMIT 100"""
-        cursor.execute(query)
-        watch_history_data = cursor.fetchall()
-        watch_history_columns = [column[0] for column in cursor.description]
+       base_query = """
+        SELECT 
+            wh.session_id AS ID,
+            COALESCE(u.first_name, u.user_id, wh.user_id) AS UserName,
+            COALESCE(m.title, wh.movie_id) AS MovieTitle,
+            wh.watch_date AS WatchDate,
+            wh.watch_duration_minutes AS MinutesWatched,
+            wh.progress_percentage AS ProgressPercentage,
+            wh.location_country AS Country,
+            wh.user_rating AS Rating
+        FROM watch_history wh
+        LEFT JOIN movies m ON m.movie_id = wh.movie_id
+        LEFT JOIN users u ON u.user_id = wh.user_id
+        """
+       params = []
+       if user_filter:
+            base_query += " WHERE u.first_name = %s "
+            params.append(user_filter)
 
-    except mysql.connector.Error as e:
-        cursor.close()
-        conn.close()
-        return f"Database error: {e}. Please check your database and connection, then try again."
+       base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
 
-    cursor.close()
-    conn.close()
-    return render_template("watch_history.html", watch_history=watch_history_data, columns=watch_history_columns)
+       cursor.execute(base_query, tuple(params))
+       watch_history_data = cursor.fetchall()
+
+       return render_template("watch_history.html", watch_history=watch_history_data, user_name=user_filter)
+
+    except Exception as e:
+        print(f"Error fetching watch history: {e}", flush=True)
+        return render_template_string(f"""
+        <h2>Error loading watch history</h2>
+        <p>Error: {e}</p>
+        <a href="{{{{ url_for('home') }}}}">Back to Home</a>
+        """)
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
+def delete_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
+    wh_id = request.form.get("primary_key")
+    
+    if not wh_id:
+        return jsonify(success=False, error="missing primary_key"), 400
+    try:
+        query = "DELETE FROM watch_history WHERE session_id = %s"
+        cursor.execute(query, (wh_id,))
+        conn.commit()
+
+        want_json = (
+            request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or request.accept_mimetypes.accept_json
+        )
+        if want_json:
+            return jsonify(success=True, id=wh_id, deleted=cursor.rowcount)
+        return redirect("/watch_history")
+    except Exception as e:
+        print("delete_watch_history error:", e, flush=True)
+        return jsonify(success=False, error=str(e)), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+    
+
+def edit_watch_history(session_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    # this endpoint is used to access the form to update the specific watch history row
+    try:
+        cursor.execute(
+            """
+            SELECT session_id, user_id, movie_id, watch_date,
+                   watch_duration_minutes, progress_percentage,
+                   location_country, user_rating
+            FROM watch_history
+            WHERE session_id = %s
+            """,
+            (session_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return render_template_string(f"""
+                <h2>Not found</h2>
+                <p>No watch history entry with id: {session_id}</p>
+                <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+            """), 404
+
+        # row is in the same order as the SELECT in the query above
+        return render_template("edit_watch_history.html", entry=row)
+    except Exception as e:
+        print("edit_watch_history error:", e, flush=True)
+        return render_template_string(f"""
+            <h2>Error loading edit form</h2>
+            <p>Error: {e}</p>
+            <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+        """), 500
+
+
+def update_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    session_id = request.form.get("session_id")
+    if not session_id:
+        return "Missing session_id", 400
+
+    # collect fields (allow blank fields)
+    user_id = request.form.get("user_id") or None
+    movie_id = request.form.get("movie_id") or None
+    watch_date = request.form.get("watch_date") or None
+    watch_duration_minutes = request.form.get("watch_duration_minutes") or None
+    progress_percentage = request.form.get("progress_percentage") or None
+    location_country = request.form.get("location_country") or None
+    user_rating = request.form.get("user_rating") or None
+
+    try:
+        sql = """
+        UPDATE watch_history
+        SET user_id=%s,
+            movie_id=%s,
+            watch_date=%s,
+            watch_duration_minutes=%s,
+            progress_percentage=%s,
+            location_country=%s,
+            user_rating=%s
+        WHERE session_id=%s
+        """
+        values = (
+            user_id,
+            movie_id,
+            watch_date,
+            watch_duration_minutes,
+            progress_percentage,
+            location_country,
+            user_rating,
+            session_id,
+        )
+        cursor.execute(sql, values)
+        conn.commit()
+    except Exception as e:
+        print("update_watch_history error:", e, flush=True)
+        return render_template_string(f"<p>Error: {e}</p><a href='/watch_history'>Back</a>"), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # redirect back to watch_history based on the user_id of the row that was being edited
+    if user_id:
+        return redirect(f"/watch_history?user_id={user_id}")
+    return redirect("/watch_history")
 
 def recommend():
     return render_template("recommend.html")
@@ -882,18 +1039,27 @@ def analytics():
         import traceback
         return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
+    # analytics returns above; recommendation logic is handled by `recommend()` function
+    
+def recommend():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
     rec_logs = RecommendationLogs(db)
     movies = Movies(db)
-
-    # Eğer user_id POST ile geldiyse
+    
+    user_id = None
+    success_message = None
+    
+    if request.args.get('success') and request.args.get('movie_title'):
+        success_message = f"New recommendation added: {request.args.get('movie_title')}"
+    
     if request.method == 'POST':
         user_id = request.form.get('user_id')
-        
-        if not user_id:
-            return render_template("recommend.html", error="Please enter a User ID", show_form=True)
-        
+    elif request.method == 'GET':
+        user_id = request.args.get('user_id')
+    
+    if user_id:
         try:
-            # Bu kullanıcıya daha önce önerilmiş filmleri getir (ilk 10)
             recommendations = rec_logs.get_user_recommendations(user_id, limit=10)
             
             if not recommendations:
@@ -902,7 +1068,6 @@ def analytics():
                                      show_form=True,
                                      user_id=user_id)
             
-            # Film başlıklarını al
             movie_titles = []
             for rec in recommendations:
                 movie = movies.select_movie(rec['movie_id'])
@@ -916,62 +1081,20 @@ def analytics():
                                  recommendations=recommendations, 
                                  movie_titles=movie_titles,
                                  user_id=user_id,
-                                 show_form=False)
+                                 show_form=False,
+                                 success_message=success_message)
         except Exception as e:
             print(f"Error fetching recommendations: {e}")
             return render_template("recommend.html", 
                                  error=f"Error: {str(e)}", 
                                  show_form=True)
     
-    # İlk yüklemede sadece formu göster
     return render_template("recommend.html", show_form=True)
 
-def save_feedback():
-    """Save user feedback (like/dislike) for a recommendation"""
-    try:
-        # Tüm feedback'leri topla
-        feedbacks = []
-        index = 0
-        
-        while True:
-            recommendation_id = request.form.get(f'recommendation_id_{index}')
-            feedback_type = request.form.get(f'feedback_{index}')
-            
-            if not recommendation_id:
-                break
-            
-            if feedback_type:  # Sadece feedback verilenleri işle
-                feedbacks.append({
-                    'recommendation_id': recommendation_id,
-                    'feedback_type': feedback_type
-                })
-            
-            index += 1
-        
-        if not feedbacks:
-            return "No feedback provided", 400
-        
-        # Tüm feedback'leri database'e kaydet
-        for feedback in feedbacks:
-            update_query = """
-                UPDATE recommendation_logs 
-                SET is_clicked = 1 
-                WHERE recommendation_id = %s
-            """
-            cursor.execute(update_query, (feedback['recommendation_id'],))
-            print(f"Feedback saved: {feedback['recommendation_id']} - {feedback['feedback_type']}")
-        
-        db.commit()
-        print(f"Total {len(feedbacks)} feedbacks saved successfully")
-        
-    except mysql.connector.Error as e:
-        return f"Database error: {e}", 500
-    
-    # Redirect back to recommend page
-    return redirect("/recommend")
-
 def click_recommendation():
-    """Mark a recommendation as clicked"""
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
     recommendation_id = request.form.get('recommendation_id')
     movie_id = request.form.get('movie_id')
     
@@ -979,7 +1102,6 @@ def click_recommendation():
         return "Recommendation ID required", 400
     
     try:
-        # is_clicked'i 1 yap
         cursor.execute("""
             UPDATE recommendation_logs 
             SET clicked = 1 
@@ -987,8 +1109,108 @@ def click_recommendation():
         """, (recommendation_id,))
         db.commit()
         
-        # Film detay sayfasına yönlendir
         return redirect(f"/movie?movie_id={movie_id}")
     except Exception as e:
         print(f"Error updating recommendation: {e}")
         return f"Error: {e}", 500
+    
+def remove_recommendation():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    recommendation_id = request.form.get('recommendation_id')
+    user_id = request.form.get('user_id')
+    
+    if not recommendation_id:
+        return "Recommendation ID required", 400
+    
+    try:
+        cursor.execute("""
+            DELETE FROM recommendation_logs 
+            WHERE recommendation_id = %s
+        """, (recommendation_id,))
+        db.commit()
+        
+        print(f"Deleted recommendation: {recommendation_id}")
+        
+        return redirect(f"/recommend?user_id={user_id}")
+    except Exception as e:
+        print(f"Error removing recommendation: {e}")
+        return f"Error: {e}", 500
+    
+def add_new_recommendation():
+    if request.method != 'POST':
+        return redirect(url_for('recommend'))
+    
+    user_id = request.form.get('user_id')
+    
+    if not user_id:
+        return "User ID required", 400
+    
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT m.movie_id, m.title 
+            FROM movies m
+            WHERE m.movie_id NOT IN (
+                SELECT movie_id 
+                FROM recommendation_logs 
+                WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 1
+        """, (user_id,))
+        
+        movie = cursor.fetchone()
+        
+        if not movie:
+            cursor.execute("""
+                SELECT movie_id, title 
+                FROM movies 
+                ORDER BY RAND() 
+                LIMIT 1
+            """)
+            movie = cursor.fetchone()
+        
+        if not movie:
+            return "No movies available", 404
+        
+        cursor.execute("""
+            SELECT MAX(CAST(SUBSTRING(recommendation_id, 5) AS UNSIGNED)) as max_id
+            FROM recommendation_logs
+            WHERE recommendation_id LIKE 'rec_%'
+        """)
+        max_result = cursor.fetchone()
+        max_id = max_result['max_id'] if max_result and max_result['max_id'] else 0
+        recommendation_id = f"rec_{str(max_id + 1).zfill(6)}"
+        
+        score = round(random.uniform(0.5, 1.0), 3)
+        
+        cursor.execute("""
+            SELECT COALESCE(MAX(position), 0) + 1 as next_position
+            FROM recommendation_logs
+            WHERE user_id = %s
+        """, (user_id,))
+        position_result = cursor.fetchone()
+        position = position_result['next_position'] if position_result else 1
+        
+        cursor.execute("""
+            INSERT INTO recommendation_logs 
+            (recommendation_id, user_id, movie_id, score, clicked, position)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (recommendation_id, user_id, movie['movie_id'], score, 0, position))
+        
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        return redirect(f"/recommend?user_id={user_id}&success=1&movie_title={movie['title']}")
+        
+    except Exception as e:
+        print(f"Error adding new recommendation: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error: {e}", 500
+    
