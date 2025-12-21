@@ -6,7 +6,7 @@ def get_db_config():
     return {
         'host': os.environ.get('DB_HOST', 'localhost'),
         'user': os.environ.get('DB_USER', 'root'),
-        'password': os.environ.get('DB_PASSWORD', 'medo'),
+        'password': os.environ.get('DB_PASSWORD', 'PopC.2025'),
         'database': os.environ.get('DB_NAME', 'netflix2025'),
         'port': int(os.environ.get('DB_PORT', 3306)),
     }

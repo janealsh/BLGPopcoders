@@ -23,7 +23,6 @@ def home():
 
 def movies():
     try:
-        # Watch history'den en çok izlenen 20 filmi getir
         query = """
             SELECT m.movie_id, m.title, m.content_type, m.rating, COUNT(wh.session_id) as watch_count
             FROM movies m
@@ -37,7 +36,6 @@ def movies():
         cursor.execute(query)
         movies_list = cursor.fetchall()
         
-        # Tuple'ları dictionary'ye çevir
         movies_data = []
         for movie in movies_list:
             movies_data.append({
@@ -71,7 +69,6 @@ def movie_detail():
         return "Movie ID required", 400
     
     try:
-        # Film bilgilerini al
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (movie_id,))
@@ -80,7 +77,6 @@ def movie_detail():
         if not movie:
             return "Movie not found", 404
         
-        # Movie tuple'ını dictionary'ye çevir
         movie_data = {
             'movie_id': movie[0],
             'title': movie[1],
@@ -88,7 +84,6 @@ def movie_detail():
             'release_year': movie[3] if len(movie) > 3 else None
         }
         
-        # Bu filme ait yorumları al
         cursor.execute("""
             SELECT * FROM reviews 
             WHERE movie_id = %s 
@@ -869,52 +864,51 @@ def analytics():
         return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
     # analytics returns above; recommendation logic is handled by `recommend()` function
+def recommend():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    rec_logs = RecommendationLogs(db)
+    movies = Movies(db)
 
-def save_feedback():
-    """Save user feedback (like/dislike) for a recommendation"""
-    try:
-        # Tüm feedback'leri topla
-        feedbacks = []
-        index = 0
-        
-        while True:
-            recommendation_id = request.form.get(f'recommendation_id_{index}')
-            feedback_type = request.form.get(f'feedback_{index}')
-            
-            if not recommendation_id:
-                break
-            
-            if feedback_type:  # Sadece feedback verilenleri işle
-                feedbacks.append({
-                    'recommendation_id': recommendation_id,
-                    'feedback_type': feedback_type
-                })
-            
-            index += 1
-        
-        if not feedbacks:
-            return "No feedback provided", 400
-        
-        # Tüm feedback'leri database'e kaydet
-        for feedback in feedbacks:
-            update_query = """
-                UPDATE recommendation_logs 
-                SET is_clicked = 1 
-                WHERE recommendation_id = %s
-            """
-            cursor.execute(update_query, (feedback['recommendation_id'],))
-            print(f"Feedback saved: {feedback['recommendation_id']} - {feedback['feedback_type']}")
-        
-        db.commit()
-        print(f"Total {len(feedbacks)} feedbacks saved successfully")
-        
-    except mysql.connector.Error as e:
-        return f"Database error: {e}", 500
-    
-    # Redirect back to recommend page
-    return redirect("/recommend")
+    user_id = None
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+    elif request.method == 'GET':
+        user_id = request.args.get('user_id')
+
+    if user_id:
+        try:
+            recommendations = rec_logs.get_user_recommendations(user_id, limit=10)
+            if not recommendations:
+                return render_template("recommend.html", 
+                                     error=f"No recommendations found for User ID: {user_id}", 
+                                     show_form=True,
+                                     user_id=user_id)
+            movie_titles = []
+            for rec in recommendations:
+                movie = movies.select_movie(rec['movie_id'])
+                if movie:
+                    movie_titles.append(movie['title'])
+                else:
+                    movie_titles.append(f"Unknown Movie (ID: {rec['movie_id']})")
+            print(f"Recommendations: {len(recommendations)}, Titles: {len(movie_titles)}")
+            return render_template("recommend.html", 
+                                 recommendations=recommendations, 
+                                 movie_titles=movie_titles,
+                                 user_id=user_id,
+                                 show_form=False)
+        except Exception as e:
+            print(f"Error fetching recommendations: {e}")
+            return render_template("recommend.html", 
+                                 error=f"Error: {str(e)}", 
+                                 show_form=True)
+    # İlk yüklemede sadece formu göster
+    return render_template("recommend.html", show_form=True)
 
 def click_recommendation():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
     """Mark a recommendation as clicked"""
     recommendation_id = request.form.get('recommendation_id')
     movie_id = request.form.get('movie_id')
@@ -935,4 +929,31 @@ def click_recommendation():
         return redirect(f"/movie?movie_id={movie_id}")
     except Exception as e:
         print(f"Error updating recommendation: {e}")
+        return f"Error: {e}", 500
+    
+def remove_recommendation():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    """Remove a recommendation from database"""
+    recommendation_id = request.form.get('recommendation_id')
+    user_id = request.form.get('user_id')
+    
+    if not recommendation_id:
+        return "Recommendation ID required", 400
+    
+    try:
+        # Recommendation log'u sil
+        cursor.execute("""
+            DELETE FROM recommendation_logs 
+            WHERE recommendation_id = %s
+        """, (recommendation_id,))
+        db.commit()
+        
+        print(f"Deleted recommendation: {recommendation_id}")
+        
+        # Aynı kullanıcının sayfasına geri dön
+        return redirect(f"/recommend?user_id={user_id}")
+    except Exception as e:
+        print(f"Error removing recommendation: {e}")
         return f"Error: {e}", 500
