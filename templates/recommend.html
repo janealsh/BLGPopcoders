@@ -1,58 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <title>Recommend Page</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+<meta charset="utf-8"/>
+<title>Recommend Page</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+<style>
+    .login-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 40px;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .login-container h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #333;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #555;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+    .form-group input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .btn-submit:hover {
+        background-color: #0056b3;
+    }
+    .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
+    }
+    .user-info {
+        background-color: #d4edda;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border: 1px solid #c3e6cb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .movie-list {
+        list-style: none;
+        padding: 0;
+    }
+    .movie-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #fff;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .movie-item:hover {
+        background-color: #f8f9fa;
+    }
+    .movie-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .movie-details {
+        font-size: 14px;
+        color: #666;
+    }
+</style>
 </head>
 <body>
-<div class="container">
-    <h1>Welcome to the Recommend Page 🎬</h1>
-    <p>Here you can see 4 random recommendation logs and their movie titles!</p>
+<div class="reviews-panel">
+<h1>Welcome to the Recommend Page 🎬</h1>
+<a href="/" class="btn-secondary" style="display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: white; margin-bottom: 20px;">Back to Home</a>
 
-    <a href="/">Back to Home</a>
+{% if show_form %}
+    <!-- User ID Giriş Formu -->
+    <div class="login-container">
+        <h2>Enter Your User ID</h2>
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+        <form method="POST" action="/recommend">
+            <div class="form-group">
+                <label for="user_id">User ID:</label>
+                <input type="text" id="user_id" name="user_id" value="{{ user_id if user_id else '' }}" placeholder="e.g., 00003" required>
+            </div>
+            <button type="submit" class="btn-submit">View My Recommendations</button>
+        </form>
+    </div>
+{% else %}
+    <!-- Öneriler Listesi -->
+    <div class="user-info">
+        <div>
+            <strong>Logged in as:</strong> {{ user_id }}
+            <span style="margin-left: 15px; color: #666;">Total Recommendations: {{ recommendations|length }}</span>
+        </div>
+        <form method="GET" action="/recommend" style="display: inline; margin: 0;">
+            <button type="submit" class="btn-secondary" style="padding: 6px 12px; border-radius: 4px;">Change User</button>
+        </form>
+    </div>
 
     {% if recommendations %}
-    <h2>Random Recommendation Logs</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Recommendation ID</th>
-                <th>User ID</th>
-                <th>Movie ID</th>
-                <th>Score</th>
-                <th>Clicked</th>
-                <th>Position</th>
-                <th>Device</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rec in recommendations %}
-            <tr>
-                <td>{{ rec.recommendation_id }}</td>
-                <td>{{ rec.user_id }}</td>
-                <td>{{ rec.movie_id }}</td>
-                <td>{{ rec.score }}</td>
-                <td>{{ rec.clicked }}</td>
-                <td>{{ rec.position }}</td>
-                <td>{{ rec.device }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h2>Corresponding Movie Titles</h2>
-    <ul>
+    <h2>Your Recommended Movies</h2>
+    <ul class="movie-list">
         {% for title in movie_titles %}
-        <li>{{ title }} 
-            <button>👍 Like</button>
-            <button>👎 Dislike</button>
+        <li class="movie-item">
+            <form method="POST" action="/click-recommendation" style="margin: 0;">
+                <input type="hidden" name="recommendation_id" value="{{ recommendations[loop.index0].recommendation_id }}">
+                <input type="hidden" name="movie_id" value="{{ recommendations[loop.index0].movie_id }}">
+                <button type="submit" style="background: none; border: none; padding: 0; text-align: left; width: 100%; cursor: pointer;">
+                    <div class="movie-title" style="color: #007bff;">{{ loop.index }}. {{ title }}</div>
+                </button>
+            </form>
         </li>
         {% endfor %}
     </ul>
     {% else %}
     <p>No recommendations found.</p>
     {% endif %}
+{% endif %}
 </div>
 </body>
 </html>

@@ -173,3 +173,21 @@ class RecommendationLogs:
         except Exception as e:
             print(f"Error fetching random logs: {e}")
             return []
+        
+    def get_user_recommendations(self, user_id, limit=10):
+        """Get recommendations for a specific user"""
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            query = """
+                SELECT * FROM recommendation_logs 
+                WHERE user_id = %s 
+                ORDER BY recommendation_id DESC 
+                LIMIT %s
+            """
+            cursor.execute(query, (user_id, limit))
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            print(f"Error fetching user recommendations: {e}")
+            return []

@@ -14,13 +14,17 @@ def create_app():
 
     app.add_url_rule("/", view_func=views.home)
     app.add_url_rule("/movies", view_func=views.movies)
+    app.add_url_rule("/movie", view_func=views.movie_detail)
     app.add_url_rule("/reviews", view_func=views.reviews)
     app.add_url_rule("/watch_history", view_func=views.watch_history)
-    app.add_url_rule("/recommend", view_func=views.recommend)
-
+    app.add_url_rule("/recommend", view_func=views.recommend, methods=["GET", "POST"])
+    
     app.add_url_rule("/add_review", view_func=views.add_review, methods=["POST"])
     app.add_url_rule("/update_review", view_func=views.update_review, methods=["POST"])
     app.add_url_rule("/delete_review", view_func=views.delete_review, methods=["POST"])
+
+    app.add_url_rule('/save-feedback', view_func=views.save_feedback, methods=['POST'])
+    app.add_url_rule("/click-recommendation", view_func=views.click_recommendation, methods=["POST"])
 
 
 

@@ -122,3 +122,9 @@ CREATE TABLE IF NOT EXISTS watch_history (
         REFERENCES movies
         ON DELETE CASCADE
 );
+
+LOAD DATA LOCAL INFILE 'Tables/watch_history.csv'
+INTO TABLE watch_history
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
