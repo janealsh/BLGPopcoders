@@ -1,5 +1,5 @@
 try:
-    from flask import render_template, request, redirect, url_for, render_template_string, flash
+    from flask import render_template, request, redirect, url_for, render_template_string, flash, jsonify
 except ImportError as e:
     raise RuntimeError("Missing dependency 'Flask'. Install with: python -m pip install Flask") from e
 
@@ -17,7 +17,6 @@ from .recommend import RecommendationLogs
 from .movies import Movies
 
 # Do NOT open a DB connection at import time; use `get_db()` inside request handlers
-
 
 def home():
     return render_template("home.html")
@@ -289,32 +288,181 @@ def delete_review():
     return redirect(f"/reviews?movie_id={movie_id}")
 
 
-
 def watch_history():
-    # db = current_app.config["db"]
-    # watch_history = db.watch_history()
-    # return render_template("watch_history.html", watch_history = watch_history)
-
     conn = get_db()
     cursor = conn.cursor()
+    user_filter = request.args.get("user_name") or None
+
     try:
-        query = """SELECT * FROM watch_history
-            ORDER BY watch_date DESC
-            LIMIT 100"""
-        cursor.execute(query)
-        watch_history_data = cursor.fetchall()
-        watch_history_columns = [column[0] for column in cursor.description]
+       base_query = """
+        SELECT 
+            wh.session_id AS ID,
+            COALESCE(u.first_name, u.user_id, wh.user_id) AS UserName,
+            COALESCE(m.title, wh.movie_id) AS MovieTitle,
+            wh.watch_date AS WatchDate,
+            wh.watch_duration_minutes AS MinutesWatched,
+            wh.progress_percentage AS ProgressPercentage,
+            wh.location_country AS Country,
+            wh.user_rating AS Rating
+        FROM watch_history wh
+        LEFT JOIN movies m ON m.movie_id = wh.movie_id
+        LEFT JOIN users u ON u.user_id = wh.user_id
+        """
+       params = []
+       if user_filter:
+            base_query += " WHERE u.first_name = %s "
+            params.append(user_filter)
 
-    except mysql.connector.Error as e:
-        cursor.close()
-        conn.close()
-        return f"Database error: {e}. Please check your database and connection, then try again."
+       base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
 
-    cursor.close()
-    conn.close()
-    return render_template("watch_history.html", watch_history=watch_history_data, columns=watch_history_columns)
+       cursor.execute(base_query, tuple(params))
+       watch_history_data = cursor.fetchall()
+
+       return render_template("watch_history.html", watch_history=watch_history_data, user_name=user_filter)
+
+    except Exception as e:
+        print(f"Error fetching watch history: {e}", flush=True)
+        return render_template_string(f"""
+        <h2>Error loading watch history</h2>
+        <p>Error: {e}</p>
+        <a href="{{{{ url_for('home') }}}}">Back to Home</a>
+        """)
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
+def delete_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
+    wh_id = request.form.get("primary_key")
+    
+    if not wh_id:
+        return jsonify(success=False, error="missing primary_key"), 400
+    try:
+        query = "DELETE FROM watch_history WHERE session_id = %s"
+        cursor.execute(query, (wh_id,))
+        conn.commit()
+
+        want_json = (
+            request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or request.accept_mimetypes.accept_json
+        )
+        if want_json:
+            return jsonify(success=True, id=wh_id, deleted=cursor.rowcount)
+        return redirect("/watch_history")
+    except Exception as e:
+        print("delete_watch_history error:", e, flush=True)
+        return jsonify(success=False, error=str(e)), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+    
+
+def edit_watch_history(session_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    # this endpoint is used to access the form to update the specific watch history row
+    try:
+        cursor.execute(
+            """
+            SELECT session_id, user_id, movie_id, watch_date,
+                   watch_duration_minutes, progress_percentage,
+                   location_country, user_rating
+            FROM watch_history
+            WHERE session_id = %s
+            """,
+            (session_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return render_template_string(f"""
+                <h2>Not found</h2>
+                <p>No watch history entry with id: {session_id}</p>
+                <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+            """), 404
+
+        # row is in the same order as the SELECT in the query above
+        return render_template("edit_watch_history.html", entry=row)
+    except Exception as e:
+        print("edit_watch_history error:", e, flush=True)
+        return render_template_string(f"""
+            <h2>Error loading edit form</h2>
+            <p>Error: {e}</p>
+            <a href="{{{{ url_for('watch_history') }}}}">Back</a>
+        """), 500
+
+
+def update_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    session_id = request.form.get("session_id")
+    if not session_id:
+        return "Missing session_id", 400
+
+    # collect fields (allow blank fields)
+    user_id = request.form.get("user_id") or None
+    movie_id = request.form.get("movie_id") or None
+    watch_date = request.form.get("watch_date") or None
+    watch_duration_minutes = request.form.get("watch_duration_minutes") or None
+    progress_percentage = request.form.get("progress_percentage") or None
+    location_country = request.form.get("location_country") or None
+    user_rating = request.form.get("user_rating") or None
+
+    try:
+        sql = """
+        UPDATE watch_history
+        SET user_id=%s,
+            movie_id=%s,
+            watch_date=%s,
+            watch_duration_minutes=%s,
+            progress_percentage=%s,
+            location_country=%s,
+            user_rating=%s
+        WHERE session_id=%s
+        """
+        values = (
+            user_id,
+            movie_id,
+            watch_date,
+            watch_duration_minutes,
+            progress_percentage,
+            location_country,
+            user_rating,
+            session_id,
+        )
+        cursor.execute(sql, values)
+        conn.commit()
+    except Exception as e:
+        print("update_watch_history error:", e, flush=True)
+        return render_template_string(f"<p>Error: {e}</p><a href='/watch_history'>Back</a>"), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # redirect back to watch_history based on the user_id of the row that was being edited
+    if user_id:
+        return redirect(f"/watch_history?user_id={user_id}")
+    return redirect("/watch_history")
 
 def recommend():
     return render_template("recommend.html")
