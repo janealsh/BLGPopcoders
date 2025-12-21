@@ -48,7 +48,8 @@ def create_app():
 
     app.add_url_rule("/click-recommendation", view_func=views.click_recommendation, methods=["POST"])
     app.add_url_rule('/remove-recommendation', view_func=views.remove_recommendation, methods=['POST'])
-
+    app.add_url_rule("/add-new-recommendation", view_func=views.add_new_recommendation, methods=["POST"])
+    
     # Search logs
     app.add_url_rule("/search-logs", view_func=views.search_logs)
     app.add_url_rule("/search-logs/add", view_func=views.add_search_log, methods=["POST"])
