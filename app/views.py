@@ -92,8 +92,7 @@ def add_review():
     movie_id = request.form.get('movie_id')
     rating = request.form.get('rating')
     device_type = request.form.get('device_type') or None
-    # accept either form field name used in templates
-    is_verified_watch = request.form.get('is_verified_watch') if request.form.get('is_verified_watch') is not None else request.form.get('is_verified_watch') or 0
+    is_verified_watch = request.form.get('is_verified_watch') or 0
     total_votes = request.form.get('total_votes') or 0
 
     if not (user_id and movie_id and rating):
@@ -486,9 +485,6 @@ def add_search_log():
 
         return redirect(url_for("search_logs"))
 
-    
-    return redirect(url_for("search_logs"))
-
 
 # Delete record
 def delete_search_log(search_id):
@@ -778,8 +774,3 @@ def analytics():
     except Exception as e:
         import traceback
         return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
-
-
-
-
-
