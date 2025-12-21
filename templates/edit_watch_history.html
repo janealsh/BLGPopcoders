@@ -29,6 +29,13 @@
         border-radius: 4px;
         box-sizing: border-box;
       }
+      .locked-field {
+        background: #f3f4f6;
+        color: #666;
+        border: 1px solid #e0e0e0;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
       .row {
         display: flex;
         gap: 12px;
@@ -68,7 +75,7 @@
       <input type="hidden" name="session_id" value="{{ e[0] }}" />
 
       <label>User ID</label>
-      <input type="text" name="user_id" value="{{ e[1] }}" />
+      <input type="text" name="user_id" readonly="true" class="locked-field" value="{{ e[1] }}" />
 
       <label>Movie ID</label>
       <input type="text" name="movie_id" value="{{ e[2] }}" />

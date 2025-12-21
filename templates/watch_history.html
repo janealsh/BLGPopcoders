@@ -143,13 +143,13 @@
         action="/watch_history"
         style="display: flex; gap: 8px; align-items: center"
       >
-        <label for="user_id">Filter by User ID:</label>
+        <label for="user_name">Find your watch history:</label>
         <input
-          id="user_id"
-          name="user_id"
+          id="user_name"
+          name="user_name"
           type="text"
-          value="{{ user_id or '' }}"
-          placeholder="enter user id"
+          value="{{ user_name or '' }}"
+          placeholder="Enter your name"
         />
         <button type="submit" class="home-button" style="background: #2563eb">
           Show
@@ -163,10 +163,10 @@
       {% if watch_history %}
       <table>
         <colgroup>
-          <col style="width: 10%" />
-          <col style="width: 10%" />
-          <col style="width: 10%" />
+          <col style="width: 8%" />
           <col style="width: 12%" />
+          <col style="width: 12%" />
+          <col style="width: 10%" />
           <col style="width: 12%" />
           <col style="width: 10%" />
           <col style="width: 10%" />
@@ -175,8 +175,8 @@
         </colgroup>
         <tr>
           <th>ID</th>
-          <th>User ID</th>
-          <th>Movie ID</th>
+          <th>User</th>
+          <th>Movie</th>
           <th>Watch date</th>
           <th>Mins watched</th>
           <th>Progress %</th>

@@ -290,24 +290,26 @@ def delete_review():
 def watch_history():
     conn = get_db()
     cursor = conn.cursor()
-    user_filter = request.args.get("user_id") or None
+    user_filter = request.args.get("user_name") or None
 
     try:
        base_query = """
         SELECT 
             wh.session_id AS ID,
-            wh.user_id AS UserID,
-            wh.movie_id AS MovieID,
+            COALESCE(u.first_name, u.user_id, wh.user_id) AS UserName,
+            COALESCE(m.title, wh.movie_id) AS MovieTitle,
             wh.watch_date AS WatchDate,
             wh.watch_duration_minutes AS MinutesWatched,
             wh.progress_percentage AS ProgressPercentage,
             wh.location_country AS Country,
             wh.user_rating AS Rating
         FROM watch_history wh
+        LEFT JOIN movies m ON m.movie_id = wh.movie_id
+        LEFT JOIN users u ON u.user_id = wh.user_id
         """
        params = []
        if user_filter:
-            base_query += " WHERE wh.user_id = %s "
+            base_query += " WHERE u.first_name = %s "
             params.append(user_filter)
 
        base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
@@ -315,7 +317,7 @@ def watch_history():
        cursor.execute(base_query, tuple(params))
        watch_history_data = cursor.fetchall()
 
-       return render_template("watch_history.html", watch_history=watch_history_data, user_id=user_filter)
+       return render_template("watch_history.html", watch_history=watch_history_data, user_name=user_filter)
 
     except Exception as e:
         print(f"Error fetching watch history: {e}", flush=True)
