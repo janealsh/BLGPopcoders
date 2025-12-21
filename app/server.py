@@ -16,10 +16,20 @@ def create_app():
     app.secret_key = "your-secret-key-change-in-production"
 
     # Import views here to avoid circular imports during module import
+    # Make imports resilient when running as `python app/server.py` or `python -m app.server`.
+    import sys
+    import importlib
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
     try:
-        from . import views
+        views = importlib.import_module("app.views")
     except Exception:
-        from app import views
+        try:
+            views = importlib.import_module("views")
+        except Exception:
+            from . import views
 
     # Main pages
     app.add_url_rule("/", view_func=views.home)

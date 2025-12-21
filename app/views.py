@@ -12,18 +12,10 @@ from .database import get_db
 from mysql.connector import errorcode
 from datetime import date
 import os
-from recommend import RecommendationLogs
-from movies import Movies
+from .recommend import RecommendationLogs
+from .movies import Movies
 
-# Database connection
-db = mysql.connector.connect(
-    host= 'localhost',
-    user='root',
-    password='PopC.2025',
-    database='netflix2025'
-)
-
-cursor = db.cursor()
+# Do NOT open a DB connection at import time; use `get_db()` inside request handlers
 
 
 def home():
@@ -40,6 +32,8 @@ def movies():
             ORDER BY watch_count DESC
             LIMIT 20
         """
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute(query)
         movies_list = cursor.fetchall()
         
@@ -58,6 +52,15 @@ def movies():
     except Exception as e:
         print(f"Error fetching movies: {e}")
         return render_template("movies.html", movies=[], error=str(e))
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def movie_detail():
@@ -69,6 +72,8 @@ def movie_detail():
     
     try:
         # Film bilgilerini al
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (movie_id,))
         movie = cursor.fetchone()
         
@@ -87,7 +92,7 @@ def movie_detail():
         cursor.execute("""
             SELECT * FROM reviews 
             WHERE movie_id = %s 
-            ORDER BY review_date DESC 
+            ORDER BY review_id ASC 
             LIMIT 10
         """, (movie_id,))
         reviews = cursor.fetchall()
@@ -96,6 +101,15 @@ def movie_detail():
     except Exception as e:
         print(f"Error fetching movie detail: {e}")
         return f"Error: {e}", 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 
@@ -141,7 +155,7 @@ def reviews():
             FROM reviews
             LEFT JOIN movies ON reviews.movie_id = movies.movie_id
             {where_sql}
-            ORDER BY review_date DESC
+            ORDER BY review_id ASC
             LIMIT %s OFFSET %s
         """
         exec_params = params + [per_page, offset]
@@ -854,49 +868,7 @@ def analytics():
         import traceback
         return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
-    rec_logs = RecommendationLogs(db)
-    movies = Movies(db)
-
-    # Eğer user_id POST ile geldiyse
-    if request.method == 'POST':
-        user_id = request.form.get('user_id')
-        
-        if not user_id:
-            return render_template("recommend.html", error="Please enter a User ID", show_form=True)
-        
-        try:
-            # Bu kullanıcıya daha önce önerilmiş filmleri getir (ilk 10)
-            recommendations = rec_logs.get_user_recommendations(user_id, limit=10)
-            
-            if not recommendations:
-                return render_template("recommend.html", 
-                                     error=f"No recommendations found for User ID: {user_id}", 
-                                     show_form=True,
-                                     user_id=user_id)
-            
-            # Film başlıklarını al
-            movie_titles = []
-            for rec in recommendations:
-                movie = movies.select_movie(rec['movie_id'])
-                if movie:
-                    movie_titles.append(movie['title'])
-                else:
-                    movie_titles.append(f"Unknown Movie (ID: {rec['movie_id']})")
-            
-            print(f"Recommendations: {len(recommendations)}, Titles: {len(movie_titles)}")
-            return render_template("recommend.html", 
-                                 recommendations=recommendations, 
-                                 movie_titles=movie_titles,
-                                 user_id=user_id,
-                                 show_form=False)
-        except Exception as e:
-            print(f"Error fetching recommendations: {e}")
-            return render_template("recommend.html", 
-                                 error=f"Error: {str(e)}", 
-                                 show_form=True)
-    
-    # İlk yüklemede sadece formu göster
-    return render_template("recommend.html", show_form=True)
+    # analytics returns above; recommendation logic is handled by `recommend()` function
 
 def save_feedback():
     """Save user feedback (like/dislike) for a recommendation"""
