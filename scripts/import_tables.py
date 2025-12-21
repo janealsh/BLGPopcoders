@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import errorcode
 import os
 import re
+import csv
 
 # Configuration - read from environment variables with sensible defaults
 DB_CONFIG = {
@@ -69,20 +70,15 @@ def import_users_table():
     # user_id,email,first_name,gender,subscription_plan,is_active
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            next(file)  # skip header line
-            for line in file:
-                fields = line.strip().split(',')
-                if len(fields) != 6:
-                    print(f"Skipping malformed line: {line.strip()}")
-                    continue
-                
-                raw_csv_id = fields[0]
+            reader = csv.DictReader(file)
+            for row in reader:
+                raw_csv_id = row['user_id']
                 csv_id = extract_int_id(raw_csv_id)
-                email = fields[1].strip() or None
-                first_name = fields[2].strip() or None
-                gender = fields[3].strip() or None
-                subscription_plan = fields[4].strip() or None
-                is_active = 1 if fields[5].strip().lower() in ("1", "true", "yes") else 0
+                email = row['email'].strip() if row['email'] else None
+                first_name = row['first_name'].strip() if row['first_name'] else None
+                gender = row['gender'].strip() if row['gender'] else None
+                subscription_plan = row['subscription_plan'].strip() if row['subscription_plan'] else None
+                is_active = 1 if row['is_active'].strip() in ("1", "true", "yes", "True", "Yes", "YES") else 0
 
                 # Try to find canonical user by normalized email
                 user_id = None
@@ -320,22 +316,19 @@ def import_watch_history_table():
     cursor = conn.cursor()
     csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/watch_history.csv')
 
+    # session_id,user_id,movie_id,watch_date,watch_duration_minutes,progress_percentage,location_country,rating
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            next(file)  
-            for line in file:
-                fields = line.strip().split(',')
-                if len(fields) < 4:  
-                    continue
-
-                session_id = fields[0].strip() if len(fields) > 0 else None
-                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
-                movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 else None
-                watch_date = fields[3].strip() if len(fields) > 3 else None
-                watch_duration = float(fields[4]) if len(fields) > 4 and fields[4].strip() else None
-                progress_pct = float(fields[5]) if len(fields) > 5 and fields[5].strip() else None
-                location_country = fields[6].strip() if len(fields) > 6 else None
-                user_rating = int(fields[7]) if len(fields) > 7 and fields[7].strip() else None
+            reader = csv.DictReader(file)
+            for row in reader:
+                session_id = row['session_id'].strip() if row['session_id'] else None
+                user_csv_id = extract_int_id(row['user_id']) if row['user_id'] else None
+                movie_csv_id = extract_int_id(row['movie_id']) if row['movie_id'] else None
+                watch_date = row['watch_date'].strip() if row['watch_date'] else None
+                watch_duration = float(row['watch_duration_minutes']) if row['watch_duration_minutes'].strip() else None
+                progress_pct = float(row['progress_percentage']) if row['progress_percentage'].strip() else None
+                location_country = row['location_country'].strip() if row['location_country'] else None
+                user_rating = int(row['rating']) if row['rating'].strip() else None
 
                 mapped_user_id = None
                 mapped_movie_id = None
@@ -388,20 +381,21 @@ def import_recommendation_logs_table():
     cursor = conn.cursor()
     csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/recommendation_logs.csv')
 
+    # CSV format (no header): rec_id,user_id,movie_id,score,clicked,position,device
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            for line in file:
-                fields = line.strip().split(',')
-                if len(fields) < 3: 
+            reader = csv.reader(file)
+            for fields in reader:
+                if len(fields) < 3:
                     continue
-
-                rec_id = extract_int_id(fields[0]) if len(fields) > 0 else None
-                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
-                movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 else None
+                    
+                rec_id = extract_int_id(fields[0]) if len(fields) > 0 and fields[0] else None
+                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 and fields[1] else None
+                movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 and fields[2] else None
                 score = float(fields[3]) if len(fields) > 3 and fields[3].strip() else None
-                is_clicked = 1 if len(fields) > 4 and fields[4].strip().lower() in ("1", "true", "yes") else 0
+                is_clicked = 1 if len(fields) > 4 and fields[4].strip().lower() in ("1", "true", "yes", "True", "Yes") else 0
                 rank = int(fields[5]) if len(fields) > 5 and fields[5].strip() else None
-                device_type = fields[6].strip() if len(fields) > 6 else None
+                device_type = fields[6].strip() if len(fields) > 6 and fields[6] else None
 
                 # map user_csv_id and movie_csv_id to canonical IDs
                 mapped_user_id = None
