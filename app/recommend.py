@@ -2,7 +2,6 @@ import os
 
 class RecommendationLogs:
     def __init__(self, connection):
-        # column names aligned with the schema in init_db.py
         self.columns = ['rec_id', 'user_id', 'movie_id', 'score', 'is_clicked', 'rank', 'device_type']
         self.connection = connection
 
@@ -112,45 +111,6 @@ class RecommendationLogs:
         except Exception as e:
             print("Error while deleting from recommendation_logs", e)
             return f"Error: {e}"
-
-    def search(self, data):
-        try:
-            cursor = self.connection.cursor()
-            query_parts = []
-            parameters = []
-            for column in self.columns:
-                value = str(data.get(column, '')) + '%'
-                if value == '%':
-                    query_parts.append(f"({column} LIKE %s OR {column} IS NULL)")
-                else:
-                    query_parts.append(f"{column} LIKE %s")
-                parameters.append(value)
-            
-            query = "SELECT * FROM recommendation_logs WHERE " + " AND ".join(query_parts)
-            cursor.execute(query, tuple(parameters))
-            results = cursor.fetchall()
-            columns = cursor.description 
-            cursor.close()
-            
-            column_types = []
-            for column in columns:
-                column_name = column[0]
-                column_type = column[1]
-                try:
-                    if 'get_mysql_data_types' in globals():
-                      mysql_data_type = get_mysql_data_types(column_type)
-                    else:
-                        mysql_data_type = str(column_type)
-                except:
-                    mysql_data_type = str(column_type)
-                
-                item = {'column_name': column_name, 'column_type': mysql_data_type}
-                column_types.append(item)
-            return results, column_types
-        
-        except Exception as e:
-            print("Could not find any corresponding value", e)
-            return False
 
     def get_all_logs(self, limit=1):
         try:
