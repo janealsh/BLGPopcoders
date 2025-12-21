@@ -1,6 +1,7 @@
 -- Active: 1764077299022@@127.0.0.1@3306@netflix2025
 CREATE DATABASE IF NOT EXISTS netflix2025;
 USE netflix2025;
+SET FOREIGN_KEY_CHECKS = 0;
 
 CREATE TABLE users (
     user_id VARCHAR(50) PRIMARY KEY,
@@ -12,6 +13,13 @@ CREATE TABLE users (
 );  
 CREATE INDEX idx_users_email ON users(email);
 
+LOAD DATA LOCAL INFILE 'Tables/users.csv'
+    INTO TABLE users
+    FIELDS TERMINATED BY ',' 
+    LINES TERMINATED BY '\\n'
+    IGNORE 1 ROWS;
+
+-- Table for movies
 CREATE TABLE movies (
     movie_id VARCHAR(50) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -20,6 +28,13 @@ CREATE TABLE movies (
 );
 CREATE INDEX idx_movies_title ON movies(title);
 
+LOAD DATA LOCAL INFILE 'Tables/movies.csv'
+    INTO TABLE movies
+    FIELDS TERMINATED BY ',' 
+    LINES TERMINATED BY '\\n'
+    IGNORE 1 ROWS;
+
+-- Table for user search activity
 CREATE TABLE search_logs (
     search_id BIGINT ,
     user_id VARCHAR(50) NOT NULL,
@@ -49,7 +64,19 @@ CREATE INDEX idx_recommendation_logs_movie_id ON recommendation_logs(movie_id);
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE ON UPDATE CASCADE,
 );
+LOAD DATA LOCAL INFILE 'Tables/recommendation_logs.csv'
+    INTO TABLE recommendation_logs
+    FIELDS TERMINATED BY ',' 
+    LINES TERMINATED BY '\\n'
+    IGNORE 1 ROWS
+    (recommendation_id, user_id, movie_id, @score, @clicked, position, device)
+    SET score = NULLIF(@score, ''),
+        clicked = IF(@clicked = 'True', 1, 0);
 
+
+UPDATE recommendation_logs 
+SET movie_id = REPLACE(movie_id, 'movie_', ''), 
+    user_id = REPLACE(user_id, 'user_', '');
 
 -- Table for user search activity
 CREATE TABLE reviews (
@@ -88,5 +115,26 @@ CREATE INDEX idx_search_history_movie_id ON search_history(movie_id);
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS watch_history (
+    session_id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    movie_id VARCHAR(50) NOT NULL,
+    watch_date DATE NOT NULL,
+    watch_duration_minutes BIGINT,
+    progress_percentage INT,
+    location_country VARCHAR(30),
+    user_rating INT,
 
+    FOREIGN KEY (user_id)
+        REFERENCES users
+        ON DELETE CASCADE,
+    FOREIGN KEY (movie_id)
+        REFERENCES movies
+        ON DELETE CASCADE
+);
 
+LOAD DATA LOCAL INFILE 'Tables/watch_history.csv'
+INTO TABLE watch_history
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;

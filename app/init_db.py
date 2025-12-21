@@ -9,6 +9,10 @@ DB_CONFIG = {
     'password': os.environ.get('DB_PASSWORD', 'Popcoder2025'),
     'database': os.environ.get('DB_NAME', 'netflix2025'),
     'port': int(os.environ.get('DB_PORT', 3306)),
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'PopC.2025',
+    'database': 'netflix2025'
 }
 
 # Optional: comma-separated list of table names to skip during initialization
