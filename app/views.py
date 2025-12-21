@@ -17,7 +17,6 @@ from .movies import Movies
 
 # Do NOT open a DB connection at import time; use `get_db()` inside request handlers
 
-
 def home():
     return render_template("home.html")
 
@@ -288,9 +287,7 @@ def delete_review():
     return redirect(f"/reviews?movie_id={movie_id}")
 
 
-
 def watch_history():
-
     conn = get_db()
     cursor = conn.cursor()
     user_filter = request.args.get("user_id") or None
@@ -321,33 +318,59 @@ def watch_history():
        return render_template("watch_history.html", watch_history=watch_history_data, user_id=user_filter)
 
     except Exception as e:
-        print(f"Error fetching watch history: {e}")
+        print(f"Error fetching watch history: {e}", flush=True)
         return render_template_string(f"""
         <h2>Error loading watch history</h2>
         <p>Error: {e}</p>
         <a href="{{{{ url_for('home') }}}}">Back to Home</a>
         """)
-
-    # # db = current_app.config["db"]
-    # # watch_history = db.get_watch_history()
-    # # return render_template("watch_history.html", watch_history = watch_history)
-    # return render_template("watch_history.html")
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def delete_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
     wh_id = request.form.get("primary_key")
+    
     if not wh_id:
         return jsonify(success=False, error="missing primary_key"), 400
     try:
         query = "DELETE FROM watch_history WHERE session_id = %s"
         cursor.execute(query, (wh_id,))
-        db.commit()
+        conn.commit()
+
+        want_json = (
+            request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or request.accept_mimetypes.accept_json
+        )
+        if want_json:
+            return jsonify(success=True, id=wh_id, deleted=cursor.rowcount)
         return redirect("/watch_history")
     except Exception as e:
+        print("delete_watch_history error:", e, flush=True)
         return jsonify(success=False, error=str(e)), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
     
 
 def edit_watch_history(session_id):
+    conn = get_db()
+    cursor = conn.cursor()
     # this endpoint is used to access the form to update the specific watch history row
     try:
         cursor.execute(
@@ -380,6 +403,9 @@ def edit_watch_history(session_id):
 
 
 def update_watch_history():
+    conn = get_db()
+    cursor = conn.cursor()
+
     session_id = request.form.get("session_id")
     if not session_id:
         return "Missing session_id", 400
@@ -416,14 +442,19 @@ def update_watch_history():
             session_id,
         )
         cursor.execute(sql, values)
-        db.commit()
+        conn.commit()
     except Exception as e:
         print("update_watch_history error:", e, flush=True)
-        return render_template_string(f"""
-            <h2>Error updating entry</h2>
-            <p>{e}</p>
-            <a href="{{{{ url_for('watch_history') }}}}">Back</a>
-        """), 500
+        return render_template_string(f"<p>Error: {e}</p><a href='/watch_history'>Back</a>"), 500
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
     # redirect back to watch_history based on the user_id of the row that was being edited
     if user_id:
