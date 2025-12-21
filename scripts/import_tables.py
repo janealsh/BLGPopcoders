@@ -393,13 +393,13 @@ def import_recommendation_logs_table():
     # recommendation_logs CSV columns: rec_id,user_id,movie_id,score,clicked,rank,device_type
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
-            next(file)  # skip header
+            # No header row in recommendation_logs.csv - start from first line
             for line in file:
                 fields = line.strip().split(',')
                 if len(fields) < 3:  # minimum fields required
                     continue
 
-                rec_id = fields[0].strip() if len(fields) > 0 else None
+                rec_id = extract_int_id(fields[0]) if len(fields) > 0 else None
                 user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
                 movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 else None
                 score = float(fields[3]) if len(fields) > 3 and fields[3].strip() else None
@@ -434,7 +434,7 @@ def import_recommendation_logs_table():
                             mapped_movie_id = r2[0]
 
                 insert_query = """
-                    INSERT IGNORE INTO recommendation_logs (rec_id, user_id, movie_id, score, is_clicked, `rank`, device_type)
+                    INSERT IGNORE INTO recommendation_logs (recommendation_id, user_id, movie_id, score, clicked, position, device)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (rec_id, mapped_user_id, mapped_movie_id, score, is_clicked, rank, device_type))
