@@ -51998,4 +51998,3 @@ rec_049998,user_03192,movie_0389,0.248,False,13,Mobile
 rec_049999,user_07072,movie_0375,0.253,True,8,Mobile
 rec_049999,user_07072,movie_0375,0.253,True,8,Mobile
 rec_050000,user_09348,movie_0969,,False,19,Smart TV
-recommendation_id,user_id,movie_id,recommendation_score,was_clicked,position_in_list,device_type

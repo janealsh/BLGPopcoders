@@ -51,6 +51,8 @@ def create_app():
     app.add_url_rule("/add_review", view_func=views.add_review, methods=["POST"])
     app.add_url_rule("/update_review", view_func=views.update_review, methods=["POST"])
     app.add_url_rule("/delete_review", view_func=views.delete_review, methods=["POST"])
+    
+    # Recommendations CRUD
 
     app.add_url_rule("/click-recommendation", view_func=views.click_recommendation, methods=["POST"])
     app.add_url_rule('/remove-recommendation', view_func=views.remove_recommendation, methods=['POST'])

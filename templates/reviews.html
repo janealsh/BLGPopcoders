@@ -470,7 +470,7 @@
 
                     <div class="form-group">
                         <label>Verified Review</label>
-                        <select name="is_verified">
+                        <select name="is_verified_watch">
                             <option value="0">No</option>
                             <option value="1">Yes</option>
                         </select>
@@ -539,9 +539,7 @@
                                             
                                             <div class="form-group">
                                                 <label>Verified</label>
-                                                <select name="is_verified">
-                                                    <option value="0" {% if r[7] == 0 or r[7] == '0' %}selected{% endif %}>No</option>
-                                                    <option value="1" {% if r[7] == 1 or r[7] == '1' %}selected{% endif %}>Yes</option>
+                                <select name="is_verified_watch">
                                                 </select>
                                             </div>
                                             

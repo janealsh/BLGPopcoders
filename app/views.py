@@ -62,7 +62,6 @@ def movies():
 
 
 def movie_detail():
-    """Show individual movie details"""
     movie_id = request.args.get('movie_id')
     
     if not movie_id:
@@ -1012,35 +1011,63 @@ def analytics():
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Simple fast query - just get basic user stats from search_logs
+        # Query with actual watch and rating calculations - show users with watch history
         sql = """
             SELECT 
-                u.user_id,
-                COALESCE(u.first_name, u.email) AS user_name,
+                w.user_id,
+                w.user_id AS user_name,
                 COUNT(DISTINCT s.search_id) AS total_searches,
-                0 AS total_watch_events,
-                0.0 AS avg_rating,
-                '' AS top_movie
-            FROM users u
-            LEFT JOIN search_logs s ON s.user_id = u.user_id
-            GROUP BY u.user_id
-            ORDER BY total_searches DESC
+                COUNT(DISTINCT w.session_id) AS total_watch_events,
+                COALESCE(AVG(r.rating), 0.0) AS avg_rating,
+                (SELECT m.title 
+                 FROM watch_history w2 
+                 JOIN movies m ON w2.movie_id = m.movie_id
+                 WHERE w2.user_id = w.user_id 
+                 GROUP BY m.movie_id 
+                 ORDER BY COUNT(*) DESC 
+                 LIMIT 1) AS top_movie
+            FROM watch_history w
+            LEFT JOIN search_logs s ON w.user_id = s.user_id
+            LEFT JOIN reviews r ON CONCAT('user_', w.user_id) = r.user_id
+            GROUP BY w.user_id
+            ORDER BY total_watch_events DESC
             LIMIT 50
         """
         cursor.execute(sql)
         rows = cursor.fetchall()
         
-        # Simple country stats
+        # Country stats with nested subqueries - using derived table to avoid GROUP BY issues
         country_sql = """
             SELECT 
-                COALESCE(location_country, 'Unknown') AS country,
-                COUNT(*) AS total_searches,
-                0 AS total_watch_events,
+                country,
+                total_searches,
+                (SELECT COUNT(*)
+                 FROM watch_history w
+                 WHERE COALESCE(w.location_country, 'Unknown') = country
+                ) AS total_watch_events,
                 0.0 AS avg_rating,
-                '' AS top_search_query,
-                '' AS top_movie
-            FROM search_logs
-            GROUP BY country
+                (SELECT search_query 
+                 FROM search_logs s2
+                 WHERE COALESCE(s2.location_country, 'Unknown') = country
+                 GROUP BY search_query
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 1
+                ) AS top_search_query,
+                (SELECT m.title
+                 FROM watch_history w2
+                 JOIN movies m ON w2.movie_id = m.movie_id
+                 WHERE COALESCE(w2.location_country, 'Unknown') = country
+                 GROUP BY m.movie_id
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 1
+                ) AS top_movie
+            FROM (
+                SELECT 
+                    COALESCE(location_country, 'Unknown') AS country,
+                    COUNT(*) AS total_searches
+                FROM search_logs
+                GROUP BY COALESCE(location_country, 'Unknown')
+            ) AS country_searches
             ORDER BY total_searches DESC
             LIMIT 20
         """
@@ -1112,7 +1139,6 @@ def click_recommendation():
     db = get_db()
     cursor = db.cursor(dictionary=True)
 
-    """Mark a recommendation as clicked"""
     recommendation_id = request.form.get('recommendation_id')
     movie_id = request.form.get('movie_id')
     
@@ -1120,7 +1146,6 @@ def click_recommendation():
         return "Recommendation ID required", 400
     
     try:
-        # is_clicked'i 1 yap
         cursor.execute("""
             UPDATE recommendation_logs 
             SET clicked = 1 
@@ -1128,7 +1153,6 @@ def click_recommendation():
         """, (recommendation_id,))
         db.commit()
         
-        # Film detay sayfasına yönlendir
         return redirect(f"/movie?movie_id={movie_id}")
     except Exception as e:
         print(f"Error updating recommendation: {e}")
@@ -1138,7 +1162,6 @@ def remove_recommendation():
     db = get_db()
     cursor = db.cursor(dictionary=True)
 
-    """Remove a recommendation from database"""
     recommendation_id = request.form.get('recommendation_id')
     user_id = request.form.get('user_id')
     
@@ -1146,7 +1169,6 @@ def remove_recommendation():
         return "Recommendation ID required", 400
     
     try:
-        # Recommendation log'u sil
         cursor.execute("""
             DELETE FROM recommendation_logs 
             WHERE recommendation_id = %s
@@ -1155,14 +1177,12 @@ def remove_recommendation():
         
         print(f"Deleted recommendation: {recommendation_id}")
         
-        # Aynı kullanıcının sayfasına geri dön
         return redirect(f"/recommend?user_id={user_id}")
     except Exception as e:
         print(f"Error removing recommendation: {e}")
         return f"Error: {e}", 500
     
 def add_new_recommendation():
-    """Generate and add a new recommendation for a user"""
     if request.method != 'POST':
         return redirect(url_for('recommend'))
     
@@ -1175,7 +1195,6 @@ def add_new_recommendation():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         
-        # 1. Get movies that the user hasn't been recommended yet
         cursor.execute("""
             SELECT m.movie_id, m.title 
             FROM movies m
@@ -1191,7 +1210,6 @@ def add_new_recommendation():
         movie = cursor.fetchone()
         
         if not movie:
-            # If all movies have been recommended, just pick a random movie
             cursor.execute("""
                 SELECT movie_id, title 
                 FROM movies 
@@ -1212,10 +1230,8 @@ def add_new_recommendation():
         max_id = max_result['max_id'] if max_result and max_result['max_id'] else 0
         recommendation_id = f"rec_{str(max_id + 1).zfill(6)}"
         
-        # 3. Generate a random score between 0.5 and 1.0
         score = round(random.uniform(0.5, 1.0), 3)
         
-        # 4. Get the next position (max position + 1)
         cursor.execute("""
             SELECT COALESCE(MAX(position), 0) + 1 as next_position
             FROM recommendation_logs
@@ -1224,7 +1240,6 @@ def add_new_recommendation():
         position_result = cursor.fetchone()
         position = position_result['next_position'] if position_result else 1
         
-        # 5. Insert the new recommendation
         cursor.execute("""
             INSERT INTO recommendation_logs 
             (recommendation_id, user_id, movie_id, score, clicked, position)
@@ -1235,7 +1250,6 @@ def add_new_recommendation():
         cursor.close()
         db.close()
         
-        # Redirect back to recommend page with success message
         return redirect(f"/recommend?user_id={user_id}&success=1&movie_title={movie['title']}")
         
     except Exception as e:
