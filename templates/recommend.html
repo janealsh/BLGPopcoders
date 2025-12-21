@@ -133,7 +133,15 @@
     </div>
 
     {% if recommendations %}
-    <h2>Your Recommended Movies</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Your Recommended Movies</h2>
+        <form method="POST" action="/add-new-recommendation" style="margin: 0;">
+            <input type="hidden" name="user_id" value="{{ user_id }}">
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 20px;">
+                Recommend Me
+            </button>
+        </form>
+    </div>
     <ul class="movie-list">
         {% for title in movie_titles %}
         <li class="movie-item">

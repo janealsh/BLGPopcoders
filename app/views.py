@@ -8,9 +8,10 @@ try:
 except ImportError as e:
     raise RuntimeError("Missing dependency 'mysql-connector-python'. Install with: python -m pip install mysql-connector-python") from e
 
+import random
 from .database import get_db
 from mysql.connector import errorcode
-from datetime import date
+from datetime import datetime, date
 import os
 from .recommend import RecommendationLogs
 from .movies import Movies
@@ -25,9 +26,9 @@ def movies():
         query = """
             SELECT m.movie_id, m.title, m.content_type, m.rating, COUNT(wh.session_id) as watch_count
             FROM movies m
-            INNER JOIN watch_history wh ON m.movie_id = wh.movie_id
+            LEFT JOIN watch_history wh ON m.movie_id = wh.movie_id
             GROUP BY m.movie_id, m.title, m.content_type, m.rating
-            ORDER BY watch_count DESC
+            ORDER BY watch_count DESC, m.movie_id
             LIMIT 20
         """
         conn = get_db()
@@ -1012,26 +1013,34 @@ def analytics():
         return f"<h1>Analytics Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
     # analytics returns above; recommendation logic is handled by `recommend()` function
+    
 def recommend():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     rec_logs = RecommendationLogs(db)
     movies = Movies(db)
-
+    
     user_id = None
+    success_message = None
+    
+    if request.args.get('success') and request.args.get('movie_title'):
+        success_message = f"New recommendation added: {request.args.get('movie_title')}"
+    
     if request.method == 'POST':
         user_id = request.form.get('user_id')
     elif request.method == 'GET':
         user_id = request.args.get('user_id')
-
+    
     if user_id:
         try:
             recommendations = rec_logs.get_user_recommendations(user_id, limit=10)
+            
             if not recommendations:
                 return render_template("recommend.html", 
                                      error=f"No recommendations found for User ID: {user_id}", 
                                      show_form=True,
                                      user_id=user_id)
+            
             movie_titles = []
             for rec in recommendations:
                 movie = movies.select_movie(rec['movie_id'])
@@ -1039,18 +1048,20 @@ def recommend():
                     movie_titles.append(movie['title'])
                 else:
                     movie_titles.append(f"Unknown Movie (ID: {rec['movie_id']})")
+            
             print(f"Recommendations: {len(recommendations)}, Titles: {len(movie_titles)}")
             return render_template("recommend.html", 
                                  recommendations=recommendations, 
                                  movie_titles=movie_titles,
                                  user_id=user_id,
-                                 show_form=False)
+                                 show_form=False,
+                                 success_message=success_message)
         except Exception as e:
             print(f"Error fetching recommendations: {e}")
             return render_template("recommend.html", 
                                  error=f"Error: {str(e)}", 
                                  show_form=True)
-    # İlk yüklemede sadece formu göster
+    
     return render_template("recommend.html", show_form=True)
 
 def click_recommendation():
@@ -1105,3 +1116,87 @@ def remove_recommendation():
     except Exception as e:
         print(f"Error removing recommendation: {e}")
         return f"Error: {e}", 500
+    
+def add_new_recommendation():
+    """Generate and add a new recommendation for a user"""
+    if request.method != 'POST':
+        return redirect(url_for('recommend'))
+    
+    user_id = request.form.get('user_id')
+    
+    if not user_id:
+        return "User ID required", 400
+    
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        
+        # 1. Get movies that the user hasn't been recommended yet
+        cursor.execute("""
+            SELECT m.movie_id, m.title 
+            FROM movies m
+            WHERE m.movie_id NOT IN (
+                SELECT movie_id 
+                FROM recommendation_logs 
+                WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 1
+        """, (user_id,))
+        
+        movie = cursor.fetchone()
+        
+        if not movie:
+            # If all movies have been recommended, just pick a random movie
+            cursor.execute("""
+                SELECT movie_id, title 
+                FROM movies 
+                ORDER BY RAND() 
+                LIMIT 1
+            """)
+            movie = cursor.fetchone()
+        
+        if not movie:
+            return "No movies available", 404
+        
+        cursor.execute("""
+            SELECT MAX(CAST(SUBSTRING(recommendation_id, 5) AS UNSIGNED)) as max_id
+            FROM recommendation_logs
+            WHERE recommendation_id LIKE 'rec_%'
+        """)
+        max_result = cursor.fetchone()
+        max_id = max_result['max_id'] if max_result and max_result['max_id'] else 0
+        recommendation_id = f"rec_{str(max_id + 1).zfill(6)}"
+        
+        # 3. Generate a random score between 0.5 and 1.0
+        score = round(random.uniform(0.5, 1.0), 3)
+        
+        # 4. Get the next position (max position + 1)
+        cursor.execute("""
+            SELECT COALESCE(MAX(position), 0) + 1 as next_position
+            FROM recommendation_logs
+            WHERE user_id = %s
+        """, (user_id,))
+        position_result = cursor.fetchone()
+        position = position_result['next_position'] if position_result else 1
+        
+        # 5. Insert the new recommendation
+        cursor.execute("""
+            INSERT INTO recommendation_logs 
+            (recommendation_id, user_id, movie_id, score, clicked, position)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (recommendation_id, user_id, movie['movie_id'], score, 0, position))
+        
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        # Redirect back to recommend page with success message
+        return redirect(f"/recommend?user_id={user_id}&success=1&movie_title={movie['title']}")
+        
+    except Exception as e:
+        print(f"Error adding new recommendation: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error: {e}", 500
+    
