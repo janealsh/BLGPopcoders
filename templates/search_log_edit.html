@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+    <title>Edit Search Log</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label { display:block; margin-top:8px; }
+        input, textarea { width: 100%; padding:6px; }
+        button { margin-top:12px; }
+    </style>
+</head>
+<body>
+    <h1>Edit Search Log #{{ row.search_id }}</h1>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="background:#eef;padding:10px;border:1px solid #99c;margin-bottom:12px;">
+                    {% for m in messages %}
+                        <div>{{ m }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    <form method="POST" action="{{ url_for('update_search_log') }}">
+        <input type="hidden" name="search_id" value="{{ row.search_id }}">
+
+        <label>User (name or email)</label>
+            <input type="text" name="user_name" value="{{ row.user_name or '' }}" placeholder="First name">
+            <input type="email" name="user_email" value="{{ row.user_email or '' }}" placeholder="email@example.com">
+            <div style="margin-top:6px">Or existing User ID:</div>
+            <input type="text" name="user_id" value="{{ row.user_id or '' }}">
+
+        <label>Search Query</label>
+        <input type="text" name="search_query" value="{{ row.search_query }}" required>
+
+        <label>Clicked Result Position</label>
+        <input type="number" name="clicked_result_position" value="{{ row.clicked_result_position or '' }}">
+
+        <label>Location Country</label>
+        <input type="text" name="location_country" value="{{ row.location_country or '' }}">
+
+        <button type="submit">Save</button>
+        <a href="{{ url_for('search_logs') }}" style="margin-left:12px;">Cancel</a>
+    </form>
+</body>
+</html>

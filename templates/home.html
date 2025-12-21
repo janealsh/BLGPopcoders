@@ -2,66 +2,269 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Poptracker home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Popcoders - Movie Tracker</title>
     <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f6f9ff,#ffffff);color:#102a43;min-height:100vh;display:flex;flex-direction:column;align-items:center}
-        .header{width:100%;max-width:980px;padding:20px 16px;display:flex;justify-content:space-between;align-items:center}
-        .brand h1{font-size:1.4rem;color:#0b3a66}
-        nav ul{list-style:none;display:flex;gap:12px}
-        nav a{color:#0b66a3;text-decoration:none;padding:8px 12px;border-radius:8px}
-        nav a:hover{background:#e6f0fb}
-        .container{width:100%;max-width:980px;padding:24px 16px}
-        .hero{background:white;border-radius:12px;padding:28px;box-shadow:0 6px 20px rgba(16,42,67,0.08);margin-bottom:20px;text-align:center}
-        .hero h2{font-size:1.4rem;margin-bottom:8px}
-        .hero p{color:#405169}
-        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-        .card{background:white;border-radius:10px;padding:18px;box-shadow:0 4px 14px rgba(16,42,67,0.06);text-align:center}
-        .card a{display:inline-block;margin-top:10px;padding:10px 14px;background:#0b66a3;color:white;border-radius:8px;text-decoration:none}
-        .footer{margin-top:auto;padding:20px;color:#6b7885}
-        @media (max-width:480px){.header{padding:16px}.hero{padding:20px}}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1a202c;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 0;
+        }
+        
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .brand .logo-icon {
+            font-size: 2rem;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: #4a5568;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        nav a:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            flex: 1;
+        }
+        
+        .hero {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 48px 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            margin-bottom: 48px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .hero p {
+            color: #718096;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+        
+        .card p {
+            color: #718096;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .card a {
+            display: inline-block;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .card a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            text-align: center;
+            color: #718096;
+            font-weight: 500;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .hero h2 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            nav ul {
+                justify-content: center;
+            }
+        }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
+
 <body>
     <header class="header">
-        <div class="brand">
-            <h1>Poptracker</h1>
+        <div class="header-inner">
+            <div class="brand">
+                <span class="logo-icon">🍿</span>
+                <h1>Popcoders</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('watch_history') }}">Watch History</a></li>
+                    <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
+                    <li><a href="{{ url_for('recommend') }}">Recommend</a></li>
+                    <li><a href="{{ url_for('search_logs') }}">Search Logs</a></li>
+                    <li><a href="{{ url_for('analytics') }}">Analytics</a></li>
+                    <li><a href="{{ url_for('users_list') }}">Users</a></li>
+                </ul>
+            </nav>
         </div>
-        <nav>
-            <ul>
-                <li><a href="{{ url_for('watch_history') }}">Watch History</a></li>
-                <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
-                <li><a href="{{ url_for('recommend') }}">Recommend</a></li>
-            </ul>
-        </nav>
     </header>
 
     <main class="container">
         <section class="hero">
-            <h2>Movie Tracker: Poptracker!</h2>
-            <p>Keep track of what you've watched, add reviews, and get recommendations.</p>
+            <h2>🎬 Movie Tracker</h2>
+            <p>Keep track of what you've watched, add reviews, and discover your next favorite movie!</p>
         </section>
 
         <section class="grid">
             <div class="card">
-                <h3>View Watch History</h3>
-                <p>See all movies you've watched and when.</p>
-                <a href="{{ url_for('watch_history') }}">Open</a>
+                <h3>📺 Watch History</h3>
+                <p>See all movies you've watched and when you watched them.</p>
+                <a href="{{ url_for('watch_history') }}">View History</a>
             </div>
+
             <div class="card">
-                <h3>Add a Review</h3>
-                <p>Share your thoughts and ratings for movies.</p>
+                <h3>⭐ Reviews</h3>
+                <p>Share your thoughts and ratings for movies you've seen.</p>
                 <a href="{{ url_for('reviews') }}">Write Review</a>
             </div>
+
             <div class="card">
-                <h3>Get Recommendations</h3>
-                <p>Discover movies you might like.</p>
-                <a href="{{ url_for('recommend') }}">Recommend</a>
+                <h3>🎯 Recommendations</h3>
+                <p>Discover movies you might like based on your preferences.</p>
+                <a href="{{ url_for('recommend') }}">Get Recommendations</a>
+            </div>
+
+            <div class="card">
+                <h3>🔍 Search Logs</h3>
+                <p>View recent search activity and manage your search history.</p>
+                <a href="{{ url_for('search_logs') }}">View Logs</a>
+            </div>
+
+            <div class="card">
+                <h3>📊 Analytics</h3>
+                <p>View aggregated analytics: searches, watches, and trending movies.</p>
+                <a href="{{ url_for('analytics') }}">View Analytics</a>
+            </div>
+
+            <div class="card">
+                <h3>👥 User Management</h3>
+                <p>Add, edit, or view all users in the system.</p>
+                <a href="{{ url_for('users_list') }}">Manage Users</a>
             </div>
         </section>
     </main>
 
-    <footer class="footer">Made with ♥ — Poptracker</footer>
+    <footer class="footer">
+        Made with ♥ by Popcoders Team
+    </footer>
 </body>
 </html>
