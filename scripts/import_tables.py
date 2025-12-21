@@ -7,7 +7,7 @@ import re
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST', 'localhost'),
     'user': os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', 'Popcoder2025'),
+    'password': os.environ.get('DB_PASSWORD', 'PopC.2025'),
     'database': os.environ.get('DB_NAME', 'netflix2025'),
     'port': int(os.environ.get('DB_PORT', 3306)),
 }
@@ -311,6 +311,145 @@ def import_search_logs_table():
         conn.close()
 
 
+def import_watch_history_table():
+    conn = connect_to_db()
+    if conn is None:
+        print("Failed to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/watch_history.csv')
+
+    # watch_history CSV columns: session_id,user_id,movie_id,watch_date,watch_duration_minutes,progress_percentage,location_country,rating
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            next(file)  # skip header
+            for line in file:
+                fields = line.strip().split(',')
+                if len(fields) < 4:  # minimum fields required
+                    continue
+
+                session_id = fields[0].strip() if len(fields) > 0 else None
+                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
+                movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 else None
+                watch_date = fields[3].strip() if len(fields) > 3 else None
+                watch_duration = float(fields[4]) if len(fields) > 4 and fields[4].strip() else None
+                progress_pct = float(fields[5]) if len(fields) > 5 and fields[5].strip() else None
+                location_country = fields[6].strip() if len(fields) > 6 else None
+                user_rating = int(fields[7]) if len(fields) > 7 and fields[7].strip() else None
+
+                # map user_csv_id and movie_csv_id to canonical IDs
+                mapped_user_id = None
+                mapped_movie_id = None
+
+                if user_csv_id is not None:
+                    cursor.execute("SELECT user_id FROM import_user_map WHERE csv_id = %s LIMIT 1", (user_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_user_id = r[0]
+                    else:
+                        cursor.execute("SELECT user_id FROM users WHERE user_id = %s LIMIT 1", (user_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_user_id = r2[0]
+
+                if movie_csv_id is not None:
+                    cursor.execute("SELECT movie_id FROM import_movie_map WHERE csv_id = %s LIMIT 1", (movie_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_movie_id = r[0]
+                    else:
+                        cursor.execute("SELECT movie_id FROM movies WHERE movie_id = %s LIMIT 1", (movie_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_movie_id = r2[0]
+
+                insert_query = """
+                    INSERT IGNORE INTO watch_history (session_id, user_id, movie_id, watch_date, watch_duration_minutes, progress_percentage, location_country, user_rating)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (session_id, mapped_user_id, mapped_movie_id, watch_date, watch_duration, progress_pct, location_country, user_rating))
+
+            conn.commit()
+            print("Watch history data imported successfully.")
+    except FileNotFoundError:
+        print(f"ERROR: File '{csv_file_path}' not found. Check the file path.")
+    except mysql.connector.Error as err:
+        print(f"Error importing watch_history data: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def import_recommendation_logs_table():
+    conn = connect_to_db()
+    if conn is None:
+        print("Failed to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Tables/recommendation_logs.csv')
+
+    # recommendation_logs CSV columns: rec_id,user_id,movie_id,score,clicked,rank,device_type
+    try:
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            next(file)  # skip header
+            for line in file:
+                fields = line.strip().split(',')
+                if len(fields) < 3:  # minimum fields required
+                    continue
+
+                rec_id = fields[0].strip() if len(fields) > 0 else None
+                user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 else None
+                movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 else None
+                score = float(fields[3]) if len(fields) > 3 and fields[3].strip() else None
+                is_clicked = 1 if len(fields) > 4 and fields[4].strip().lower() in ("1", "true", "yes") else 0
+                rank = int(fields[5]) if len(fields) > 5 and fields[5].strip() else None
+                device_type = fields[6].strip() if len(fields) > 6 else None
+
+                # map user_csv_id and movie_csv_id to canonical IDs
+                mapped_user_id = None
+                mapped_movie_id = None
+
+                if user_csv_id is not None:
+                    cursor.execute("SELECT user_id FROM import_user_map WHERE csv_id = %s LIMIT 1", (user_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_user_id = r[0]
+                    else:
+                        cursor.execute("SELECT user_id FROM users WHERE user_id = %s LIMIT 1", (user_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_user_id = r2[0]
+
+                if movie_csv_id is not None:
+                    cursor.execute("SELECT movie_id FROM import_movie_map WHERE csv_id = %s LIMIT 1", (movie_csv_id,))
+                    r = cursor.fetchone()
+                    if r:
+                        mapped_movie_id = r[0]
+                    else:
+                        cursor.execute("SELECT movie_id FROM movies WHERE movie_id = %s LIMIT 1", (movie_csv_id,))
+                        r2 = cursor.fetchone()
+                        if r2:
+                            mapped_movie_id = r2[0]
+
+                insert_query = """
+                    INSERT IGNORE INTO recommendation_logs (rec_id, user_id, movie_id, score, is_clicked, `rank`, device_type)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (rec_id, mapped_user_id, mapped_movie_id, score, is_clicked, rank, device_type))
+
+            conn.commit()
+            print("Recommendation logs data imported successfully.")
+    except FileNotFoundError:
+        print(f"ERROR: File '{csv_file_path}' not found. Check the file path.")
+    except mysql.connector.Error as err:
+        print(f"Error importing recommendation_logs data: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def main():
     import_users_table()
     input("Press Enter to continue to import movies...")
@@ -319,6 +458,10 @@ def main():
     import_reviews_table()
     input("Press Enter to continue to import search_logs...")
     import_search_logs_table()
+    input("Press Enter to continue to import watch_history...")
+    import_watch_history_table()
+    input("Press Enter to continue to import recommendation_logs...")
+    import_recommendation_logs_table()
 
 if __name__ == "__main__":
     main()
