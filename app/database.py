@@ -6,7 +6,7 @@ import os
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST', 'localhost'),
     'user': os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', 'PopC.2025'),
+    'password': os.environ.get('DB_PASSWORD', 'Popcoder2025'),
     'database': os.environ.get('DB_NAME', 'netflix2025'),
     'port': int(os.environ.get('DB_PORT', 3306)),
 }
