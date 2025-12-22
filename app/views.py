@@ -287,13 +287,14 @@ def delete_review():
     return redirect(f"/reviews?movie_id={movie_id}")
 
 
+
 def watch_history():
     conn = get_db()
     cursor = conn.cursor()
-    user_filter = request.args.get("user_name") or None
+    user_filter = request.args.get("user_id") or None
 
     try:
-       base_query = """
+        base_query = """
         SELECT 
             wh.session_id AS ID,
             COALESCE(u.first_name, u.user_id, wh.user_id) AS UserName,
@@ -307,17 +308,58 @@ def watch_history():
         LEFT JOIN movies m ON m.movie_id = wh.movie_id
         LEFT JOIN users u ON u.user_id = wh.user_id
         """
-       params = []
-       if user_filter:
-            base_query += " WHERE u.first_name = %s "
+        params = []
+        if user_filter:
+            base_query += " WHERE u.user_id = %s "
             params.append(user_filter)
 
-       base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
+        base_query += " ORDER BY wh.watch_date DESC LIMIT 100"
 
-       cursor.execute(base_query, tuple(params))
-       watch_history_data = cursor.fetchall()
+        cursor.execute(base_query, tuple(params))
+        watch_history_data = cursor.fetchall()
 
-       return render_template("watch_history.html", watch_history=watch_history_data, user_name=user_filter)
+        completion_data = []
+        if user_filter:
+            # Simple subquery to find abandoned movies others finished
+            analysis_query = """
+            SELECT 
+                m.title AS Movie,
+                wh.progress_percentage AS YourProgress,
+                (
+                    SELECT ROUND(AVG(wh2.progress_percentage))
+                    FROM watch_history wh2
+                    WHERE wh2.movie_id = wh.movie_id
+                      AND wh2.user_id != wh.user_id
+                      AND wh2.progress_percentage >= 80
+                ) AS OthersAvgProgress,
+                (
+                    SELECT COUNT(DISTINCT wh2.user_id)
+                    FROM watch_history wh2
+                    WHERE wh2.movie_id = wh.movie_id
+                      AND wh2.user_id != wh.user_id
+                      AND wh2.progress_percentage >= 80
+                ) AS OthersFinishedCount
+            FROM watch_history wh
+            JOIN movies m ON wh.movie_id = m.movie_id
+            JOIN users u ON wh.user_id = u.user_id
+            WHERE u.user_id = %s 
+              AND wh.progress_percentage < 70
+              AND wh.movie_id IN (
+                  SELECT DISTINCT movie_id
+                  FROM watch_history wh2
+                  WHERE wh2.progress_percentage >= 80
+                    AND wh2.user_id != wh.user_id
+              )
+            ORDER BY OthersFinishedCount DESC
+            LIMIT 3
+            """
+
+            cursor.execute(analysis_query, (user_filter,))
+            completion_data = cursor.fetchall()
+
+        return render_template(
+            "watch_history.html", watch_history=watch_history_data, user_id=user_filter, completion_data=completion_data
+        )
 
     except Exception as e:
         print(f"Error fetching watch history: {e}", flush=True)
@@ -341,7 +383,7 @@ def delete_watch_history():
     conn = get_db()
     cursor = conn.cursor()
     wh_id = request.form.get("primary_key")
-    
+
     if not wh_id:
         return jsonify(success=False, error="missing primary_key"), 400
     try:
@@ -368,7 +410,7 @@ def delete_watch_history():
             conn.close()
         except Exception:
             pass
-    
+
 
 def edit_watch_history(session_id):
     conn = get_db()
@@ -447,7 +489,9 @@ def update_watch_history():
         conn.commit()
     except Exception as e:
         print("update_watch_history error:", e, flush=True)
-        return render_template_string(f"<p>Error: {e}</p><a href='/watch_history'>Back</a>"), 500
+        return render_template_string(
+            f"<p>Error: {e}</p><a href='/watch_history'>Back</a>"
+        ), 500
     finally:
         try:
             cursor.close()

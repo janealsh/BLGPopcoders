@@ -258,7 +258,7 @@
             <td>{{ u.user_id }}</td>
             <td>{{ u.first_name or '' }}</td>
             <td>{{ u.email or '' }}</td>
-            <td>{{ u.is_active }}</td>
+            <td>{% if u.is_active == 1 %}✓ Active{% else %}✗ Inactive{% endif %}</td>
             <td>
                 <a class="btn" href="{{ url_for('edit_user', user_id=u.user_id) }}">Edit</a>
                 <form class="inline" method="POST" action="{{ url_for('delete_user', user_id=u.user_id) }}">

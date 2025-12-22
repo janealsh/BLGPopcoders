@@ -1,0 +1,36 @@
+Mustafa Furka Delioğlu
+150220734
+
+Week 6
+-Initialized project environment and defined dependencies in requirements.txt.
+-Designed the initial database schema and created primary responsible tables.
+-Configured .gitignore to manage macOS-specific system files and repository cleanliness.
+
+Week 7
+-Refined the database structure by merging tables and optimizing attribute data types.
+-Implemented core database connection logic and established a "DB Reset" mechanism for development.
+-Reorganized SQL script execution order to ensure proper table creation and foreign key relationships.
+
+Week 8
+-Started the development of the recommendation engine (recommend.py).
+-Integrated recommendation_logs SQL structure to track system suggestions.
+-Created the initial routing and templates for the recommendation feature.
+
+Week 9
+-Enhanced the recommendation interface to display dynamic data.
+-Implemented logic to fetch and display four random log entries on the recommendation page to improve user experience.
+
+Week 10
+-Developed "Review Submission" functionality, allowing users to interact with movie content.
+-Advanced the movie recommendation features on the furkan_branch.
+-Successfully performed branch synchronization and merged feature developments into the main codebase.
+
+Week 11
+-Expanded the frontend by adding "Popular Movies" and "Movie Detail" pages.
+-Developed backend functions for importing table data efficiently.
+-Restored and stabilized database initialization scripts (init_db) and performed general code cleanup.
+
+Week 12
+-Finalized the recommendation logging system and ensured proper data persistence.
+-Conducted a comprehensive final merge of all features.
+-Performed final debugging and removed redundant files to prepare the project for deployment.

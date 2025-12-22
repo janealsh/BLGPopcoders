@@ -109,7 +109,6 @@ CREATE_TABLES_SQL = [
             progress_percentage DOUBLE,
             location_country VARCHAR(100),
             user_rating INT,
-
             PRIMARY KEY (session_id),
             INDEX (user_id),
             INDEX (movie_id),
@@ -146,13 +145,6 @@ def create_database_and_tables(config=DB_CONFIG):
                 print(f"Error selecting database '{database_name}': {err}")
                 raise
 
-        # Drop recommendation_logs if it exists to fix schema issue
-        try:
-            cursor.execute("DROP TABLE IF EXISTS recommendation_logs")
-            print("Dropped existing recommendation_logs table (if any).")
-        except mysql.connector.Error as err:
-            print(f"Error dropping recommendation_logs: {err}")
-
         # Create tables in defined order
         for name, stmt in CREATE_TABLES_SQL:
             try:
@@ -164,9 +156,9 @@ def create_database_and_tables(config=DB_CONFIG):
 
         try:
             cursor.execute("UPDATE recommendation_logs SET movie_id = REPLACE(movie_id, 'movie_', ''), user_id = REPLACE(user_id, 'user_', '')")
-            print("recommendation_logs tablosunda önekler temizlendi.")
+            print("Prefixed IDs in recommendation_logs cleaned.")
         except mysql.connector.Error as err:
-            print(f"Önek temizleme sırasında hata: {err}")
+            print(f"Error cleaning prefixed IDs in recommendation_logs: {err}")
 
     except mysql.connector.Error as err:
         print(f"MySQL error: {err}")
