@@ -389,7 +389,7 @@ def import_recommendation_logs_table():
                 if len(fields) < 3:
                     continue
                     
-                rec_id = extract_int_id(fields[0]) if len(fields) > 0 and fields[0] else None
+                rec_id = fields[0].strip() if len(fields) > 0 and fields[0] else None
                 user_csv_id = extract_int_id(fields[1]) if len(fields) > 1 and fields[1] else None
                 movie_csv_id = extract_int_id(fields[2]) if len(fields) > 2 and fields[2] else None
                 score = float(fields[3]) if len(fields) > 3 and fields[3].strip() else None
